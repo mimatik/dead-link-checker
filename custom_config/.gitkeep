@@ -1,0 +1,7 @@
+# This file ensures the custom_config/ directory is tracked by git
+# even when empty. You can add your custom configuration files here.
+#
+# Example usage:
+# - Copy config.yaml to custom_config/my-site.yaml
+# - Modify the configuration for your specific needs
+# - Run the crawler and select your custom configuration

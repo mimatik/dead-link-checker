@@ -5,6 +5,7 @@ Crawls a website and checks all links for dead/broken URLs
 """
 
 import csv
+import glob
 import os
 import time
 from collections import deque
@@ -110,6 +111,12 @@ class LinkChecker:
         config_domain_rules = config.get("domain_rules", {})
         self.domain_rules = {**default_domain_rules, **config_domain_rules}
 
+    def _get_domain(self, url: str) -> str:
+        """Extract domain from URL, removing www prefix"""
+        parsed_url = urlparse(url)
+        domain = parsed_url.netloc.lower()
+        return domain[4:] if domain.startswith("www.") else domain
+
     def check_link(self, url: str) -> Tuple[bool, Optional[int], Optional[str]]:
         """
         Check if a link is accessible
@@ -139,12 +146,7 @@ class LinkChecker:
                 return False, status_code, f"Redirect {status_code}"
 
             # Check domain-specific rules first
-            parsed_url = urlparse(url)
-            domain = parsed_url.netloc.lower()
-
-            # Remove 'www.' prefix for domain matching
-            if domain.startswith("www."):
-                domain = domain[4:]
+            domain = self._get_domain(url)
 
             # Check if this domain has specific rules
             if domain in self.domain_rules:
@@ -167,12 +169,7 @@ class LinkChecker:
 
         except requests.exceptions.Timeout:
             # Check if this domain should ignore timeouts
-            parsed_url = urlparse(url)
-            domain = parsed_url.netloc.lower()
-
-            # Remove 'www.' prefix for domain matching
-            if domain.startswith("www."):
-                domain = domain[4:]
+            domain = self._get_domain(url)
 
             # Check if this domain should ignore timeouts
             if domain in self.domain_rules:
@@ -229,6 +226,10 @@ class WebCrawler:
 
         # Display settings
         self.show_skipped_links = config.get("show_skipped_links", False)
+
+    def _should_add_to_queue(self, link_url: str) -> bool:
+        """Check if internal link should be added to crawl queue"""
+        return self.is_internal_url(link_url) and link_url not in self.visited_pages
 
     def is_internal_url(self, url: str) -> bool:
         """Check if URL belongs to the same domain"""
@@ -350,10 +351,7 @@ class WebCrawler:
                         self.logger.success(link_url)
 
                     # Add internal links to crawl queue
-                    if (
-                        self.is_internal_url(link_url)
-                        and link_url not in self.visited_pages
-                    ):
+                    if self._should_add_to_queue(link_url):
                         self.to_visit.append(link_url)
 
                     # Delay between requests
@@ -402,14 +400,84 @@ class WebCrawler:
         self.logger.info(f"Report saved to: {filename}")
 
 
+def find_custom_configs() -> List[str]:
+    """Find all YAML configuration files in custom_config/ directory"""
+    custom_config_dir = "custom_config"
+    if not os.path.exists(custom_config_dir):
+        return []
+
+    # Find all .yaml and .yml files in custom_config directory
+    config_files = glob.glob(os.path.join(custom_config_dir, "*.yaml")) + glob.glob(
+        os.path.join(custom_config_dir, "*.yml")
+    )
+
+    return sorted(config_files)
+
+
+def select_config() -> str:
+    """Allow user to select configuration file"""
+    custom_configs = find_custom_configs()
+
+    # If no custom configs found, use default config.yaml
+    if not custom_configs:
+        print(
+            f"{Fore.BLUE}ℹ{Style.RESET_ALL} "
+            f"No custom configurations found in custom_config/"
+        )
+        print(f"{Fore.BLUE}ℹ{Style.RESET_ALL} Using default config.yaml")
+        return "config.yaml"
+
+    # Display available configurations
+    print(f"{Fore.CYAN}📁 Available configurations:{Style.RESET_ALL}")
+    print()
+
+    for i, config_path in enumerate(custom_configs, 1):
+        config_name = os.path.basename(config_path)
+        print(f"  {i}. {config_name}")
+
+    print(f"  {len(custom_configs) + 1}. Use default config.yaml")
+    print()
+
+    # Get user selection
+    while True:
+        try:
+            choice = input(
+                f"{Fore.YELLOW}Select configuration "
+                f"(1-{len(custom_configs) + 1}): {Style.RESET_ALL}"
+            )
+            choice_num = int(choice)
+
+            if 1 <= choice_num <= len(custom_configs):
+                selected_config = custom_configs[choice_num - 1]
+                print(
+                    f"{Fore.GREEN}✓{Style.RESET_ALL} "
+                    f"Selected: {os.path.basename(selected_config)}"
+                )
+                return selected_config
+            elif choice_num == len(custom_configs) + 1:
+                print(f"{Fore.GREEN}✓{Style.RESET_ALL} Using default config.yaml")
+                return "config.yaml"
+            else:
+                print(
+                    f"{Fore.RED}Invalid choice. Please enter a number "
+                    f"between 1 and {len(custom_configs) + 1}{Style.RESET_ALL}"
+                )
+        except ValueError:
+            print(f"{Fore.RED}Invalid input. Please enter a number{Style.RESET_ALL}")
+        except KeyboardInterrupt:
+            print(f"\n{Fore.YELLOW}Operation cancelled{Style.RESET_ALL}")
+            exit(0)
+
+
 def load_config(config_path: str = "config.yaml") -> dict:
     """Load configuration from YAML file"""
     try:
-        with open(config_path, "r") as f:
+        with open(config_path, "r", encoding="utf-8") as f:
             return yaml.safe_load(f)
     except FileNotFoundError:
         print(
-            f"{Fore.RED}Error: Configuration file '{config_path}' not found{Style.RESET_ALL}"
+            f"{Fore.RED}Error: Configuration file '{config_path}' "
+            f"not found{Style.RESET_ALL}"
         )
         exit(1)
     except yaml.YAMLError as e:
@@ -423,13 +491,15 @@ def main():
     print(f"{'Dead Link Checker':^60}")
     print(f"{'=' * 60}{Style.RESET_ALL}\n")
 
-    # Load configuration
-    config = load_config("config.yaml")
+    # Select and load configuration
+    config_path = select_config()
+    config = load_config(config_path)
     start_url = config.get("start_url")
 
     if not start_url:
         print(
-            f"{Fore.RED}Error: start_url not specified in config.yaml{Style.RESET_ALL}"
+            f"{Fore.RED}Error: start_url not specified in "
+            f"{config_path}{Style.RESET_ALL}"
         )
         exit(1)
 

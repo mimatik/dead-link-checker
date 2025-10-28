@@ -30,4 +30,5 @@ Thumbs.db
 *.log
 
 # custom configs
-custom_config/*.*
+custom_config/*.yaml
+custom_config/*.yml
