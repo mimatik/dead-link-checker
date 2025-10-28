@@ -1,0 +1,43 @@
+#!/bin/bash
+
+# Dead Link Crawler - Run Script
+# Automatically activates virtual environment and runs the crawler
+
+set -e  # Exit on any error
+
+# Get the directory where this script is located
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$SCRIPT_DIR"
+
+# Check if virtual environment exists
+if [ ! -d "venv" ]; then
+    echo "❌ Virtual environment not found!"
+    echo "Please run: python -m venv venv"
+    exit 1
+fi
+
+# Check if config.yaml exists
+if [ ! -f "config.yaml" ]; then
+    echo "❌ Configuration file 'config.yaml' not found!"
+    echo "Please create config.yaml with your settings"
+    exit 1
+fi
+
+# Activate virtual environment
+echo "🔧 Activating virtual environment..."
+source venv/bin/activate
+
+# Check if dependencies are installed
+if ! python -c "import requests, yaml, bs4, colorama" 2>/dev/null; then
+    echo "❌ Required dependencies not found!"
+    echo "Installing dependencies..."
+    pip install -r requirements.txt
+fi
+
+# Run the crawler
+echo "🚀 Starting Dead Link Crawler..."
+echo "=================================="
+python dead_link_checker.py
+
+echo ""
+echo "✅ Crawling completed!"
