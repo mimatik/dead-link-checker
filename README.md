@@ -30,8 +30,8 @@ curl -LsSf https://astral.sh/uv/install.sh | sh  # Install uv
 
 **Or use custom configuration:**
 ```bash
-cp custom_config/examples.yaml custom_config/my-site.yaml
-# Edit custom_config/my-site.yaml
+touch custom_config/my-site.yaml 
+# Edit custom_config/my-site.yaml, check examples in config.examples.yaml
 ./run
 ```
 
