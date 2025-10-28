@@ -32,3 +32,4 @@ Thumbs.db
 # custom configs
 custom_config/*.yaml
 custom_config/*.yml
+!custom_config/config.examples.yaml

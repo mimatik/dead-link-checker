@@ -1,7 +1,0 @@
-start_url: "https://example.com"
-timeout: 15
-delay: 0.5
-max_depth: null
-output_dir: "reports"
-show_skipped_links: false
-whitelist_codes: [999, 403, 451]

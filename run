@@ -16,13 +16,6 @@ if ! command -v uv &> /dev/null; then
     exit 1
 fi
 
-# Check if config.yaml exists
-if [ ! -f "config.yaml" ]; then
-    echo "❌ Configuration file 'config.yaml' not found!"
-    echo "Please create config.yaml with your settings"
-    exit 1
-fi
-
 # Sync dependencies (uv handles virtual environment automatically)
 echo "🔧 Syncing dependencies with uv..."
 uv sync

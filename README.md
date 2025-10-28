@@ -22,13 +22,16 @@ cd dead-link-checker
 curl -LsSf https://astral.sh/uv/install.sh | sh  # Install uv
 ```
 
-2. **Configuration:**
+2. **Run (interactive):**
 ```bash
-nano config.yaml  # Change start_url
+./run
+# Program will prompt for domain
 ```
 
-3. **Run:**
+**Or use custom configuration:**
 ```bash
+cp custom_config/examples.yaml custom_config/my-site.yaml
+# Edit custom_config/my-site.yaml
 ./run
 ```
 
@@ -66,19 +69,35 @@ python dead_link_checker.py
 
 ## Configuration
 
-### Basic Settings
+### Interactive Mode (Default)
+When you run `./run` without custom configuration, the program will:
+1. Ask for the domain to crawl
+2. Automatically add `https://` if you don't specify protocol
+3. Use built-in default settings
+
+Example:
+```
+🌐 Domain Configuration
+
+Enter domain to crawl (e.g., example.com): mywebsite.com
+✓ Will crawl: https://mywebsite.com
+```
+
+### Custom Configuration
+Create custom configurations in `custom_config/` directory:
+```bash
+cp custom_config/examples.yaml custom_config/my-site.yaml
+# Edit custom_config/my-site.yaml
+./run  # Select your configuration
+```
+
+Example custom configuration:
 ```yaml
 start_url: "https://your-domain.com"
 timeout: 15
 delay: 0.5
 max_depth: null  # null = unlimited
-```
-
-### Custom Configuration
-```bash
-cp config.yaml custom_config/my-site.yaml
-# Edit custom_config/my-site.yaml
-# Run ./run and select configuration
+show_skipped_links: true
 ```
 
 ### Domain Rules (reduce false positives)

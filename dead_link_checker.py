@@ -411,21 +411,67 @@ def find_custom_configs() -> List[str]:
         os.path.join(custom_config_dir, "*.yml")
     )
 
+    # Exclude example configs from selection
+    excluded_names = {"config.examples.yaml", "config.examples.yml"}
+    config_files = [
+        p for p in config_files if os.path.basename(p) not in excluded_names
+    ]
+
     return sorted(config_files)
+
+
+def prompt_for_domain() -> str:
+    """Prompt user for domain if not specified in config"""
+    print(f"{Fore.CYAN}🌐 Domain Configuration{Style.RESET_ALL}")
+    print()
+
+    while True:
+        try:
+            domain_input = input(
+                f"{Fore.YELLOW}Enter domain to crawl (e.g., example.com): {Style.RESET_ALL}"
+            ).strip()
+
+            if not domain_input:
+                print(
+                    f"{Fore.RED}Domain cannot be empty. Please try again.{Style.RESET_ALL}"
+                )
+                continue
+
+            # Add protocol if not provided
+            if not domain_input.startswith(("http://", "https://")):
+                domain_input = f"https://{domain_input}"
+
+            # Validate URL format
+            parsed = urlparse(domain_input)
+            if not parsed.netloc:
+                print(
+                    f"{Fore.RED}Invalid domain format. Please try again.{Style.RESET_ALL}"
+                )
+                continue
+
+            print(f"{Fore.GREEN}✓{Style.RESET_ALL} Will crawl: {domain_input}")
+            return domain_input
+
+        except KeyboardInterrupt:
+            print(f"\n{Fore.YELLOW}Operation cancelled{Style.RESET_ALL}")
+            exit(0)
+        except Exception as e:
+            print(f"{Fore.RED}Error: {e}{Style.RESET_ALL}")
+            continue
 
 
 def select_config() -> str:
     """Allow user to select configuration file"""
     custom_configs = find_custom_configs()
 
-    # If no custom configs found, use default config.yaml
+    # If no custom configs found, use default configuration
     if not custom_configs:
         print(
             f"{Fore.BLUE}ℹ{Style.RESET_ALL} "
             f"No custom configurations found in custom_config/"
         )
-        print(f"{Fore.BLUE}ℹ{Style.RESET_ALL} Using default config.yaml")
-        return "config.yaml"
+        print(f"{Fore.BLUE}ℹ{Style.RESET_ALL} Using default configuration")
+        return None
 
     # Display available configurations
     print(f"{Fore.CYAN}📁 Available configurations:{Style.RESET_ALL}")
@@ -435,7 +481,7 @@ def select_config() -> str:
         config_name = os.path.basename(config_path)
         print(f"  {i}. {config_name}")
 
-    print(f"  {len(custom_configs) + 1}. Use default config.yaml")
+    print(f"  {len(custom_configs) + 1}. Use default configuration")
     print()
 
     # Get user selection
@@ -455,8 +501,8 @@ def select_config() -> str:
                 )
                 return selected_config
             elif choice_num == len(custom_configs) + 1:
-                print(f"{Fore.GREEN}✓{Style.RESET_ALL} Using default config.yaml")
-                return "config.yaml"
+                print(f"{Fore.GREEN}✓{Style.RESET_ALL} Using default configuration")
+                return None
             else:
                 print(
                     f"{Fore.RED}Invalid choice. Please enter a number "
@@ -469,11 +515,27 @@ def select_config() -> str:
             exit(0)
 
 
-def load_config(config_path: str = "config.yaml") -> dict:
+def get_default_config() -> dict:
+    """Get default configuration"""
+    return {
+        "timeout": 15,
+        "delay": 0.5,
+        "max_depth": None,
+        "output_dir": "reports",
+        "show_skipped_links": False,
+        "whitelist_codes": [999, 403, 451],
+    }
+
+
+def load_config(config_path: str) -> dict:
     """Load configuration from YAML file"""
     try:
         with open(config_path, "r", encoding="utf-8") as f:
-            return yaml.safe_load(f)
+            config = yaml.safe_load(f)
+            # Override default config with custom config
+            default_config = get_default_config()
+            default_config.update(config)
+            return default_config
     except FileNotFoundError:
         print(
             f"{Fore.RED}Error: Configuration file '{config_path}' "
@@ -493,15 +555,18 @@ def main():
 
     # Select and load configuration
     config_path = select_config()
-    config = load_config(config_path)
+
+    if config_path:
+        config = load_config(config_path)
+    else:
+        config = get_default_config()
+
     start_url = config.get("start_url")
 
+    # If no start_url in config, prompt user for domain
     if not start_url:
-        print(
-            f"{Fore.RED}Error: start_url not specified in "
-            f"{config_path}{Style.RESET_ALL}"
-        )
-        exit(1)
+        start_url = prompt_for_domain()
+        config["start_url"] = start_url
 
     # Initialize logger and crawler
     logger = ConsoleLogger()
