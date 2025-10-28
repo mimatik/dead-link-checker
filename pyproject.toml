@@ -1,0 +1,11 @@
+[project]
+name = "dead-link-crawler"
+version = "0.1.0"
+description = "Python web crawler for detecting dead links on websites"
+requires-python = ">=3.9"
+dependencies = [
+    "beautifulsoup4>=4.14.2",
+    "colorama>=0.4.6",
+    "pyyaml>=6.0.3",
+    "requests>=2.32.5",
+]

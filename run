@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Dead Link Crawler - Run Script
-# Automatically activates virtual environment and runs the crawler
+# Automatically manages dependencies and runs the crawler with uv
 
 set -e  # Exit on any error
 
@@ -9,10 +9,10 @@ set -e  # Exit on any error
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR"
 
-# Check if virtual environment exists
-if [ ! -d "venv" ]; then
-    echo "❌ Virtual environment not found!"
-    echo "Please run: python -m venv venv"
+# Check if uv is installed
+if ! command -v uv &> /dev/null; then
+    echo "❌ uv not found!"
+    echo "Please install uv: curl -LsSf https://astral.sh/uv/install.sh | sh"
     exit 1
 fi
 
@@ -23,21 +23,14 @@ if [ ! -f "config.yaml" ]; then
     exit 1
 fi
 
-# Activate virtual environment
-echo "🔧 Activating virtual environment..."
-source venv/bin/activate
-
-# Check if dependencies are installed
-if ! python -c "import requests, yaml, bs4, colorama" 2>/dev/null; then
-    echo "❌ Required dependencies not found!"
-    echo "Installing dependencies..."
-    pip install -r requirements.txt
-fi
+# Sync dependencies (uv handles virtual environment automatically)
+echo "🔧 Syncing dependencies with uv..."
+uv sync
 
 # Run the crawler
 echo "🚀 Starting Dead Link Crawler..."
 echo "=================================="
-python dead_link_checker.py
+uv run dead_link_checker.py
 
 echo ""
 echo "✅ Crawling completed!"

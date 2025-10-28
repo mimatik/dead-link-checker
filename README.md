@@ -19,7 +19,7 @@ Python web crawler for detecting dead links on websites.
 ```bash
 git clone git@github.com:mimatik/dead-link-checker.git
 cd dead-link-checker
-python3 -m venv venv
+curl -LsSf https://astral.sh/uv/install.sh | sh  # Install uv
 ```
 
 2. **Configuration:**
@@ -33,6 +33,36 @@ nano config.yaml  # Change start_url
 ```
 
 4. **Results:** `reports/dead_links_report_DOMAIN_TIMESTAMP.csv`
+
+## Development
+
+This project uses [uv](https://docs.astral.sh/uv/) for fast dependency management and Python environment handling.
+
+### Manual Commands
+
+```bash
+# Install dependencies
+uv sync
+
+# Run the crawler directly
+uv run dead_link_checker.py
+
+# Add new dependencies
+uv add package-name
+
+# Update dependencies
+uv lock --upgrade
+```
+
+### Alternative Installation Methods
+
+If you prefer traditional Python workflow:
+```bash
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+python dead_link_checker.py
+```
 
 ## Configuration
 
