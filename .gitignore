@@ -29,7 +29,14 @@ Thumbs.db
 # Logs
 *.log
 
-# custom configs
+# custom configs (YAML - legacy)
 custom_config/*.yaml
 custom_config/*.yml
 !custom_config/config.examples.yaml
+
+# custom configs (JSON - new)
+custom_config_json/*.json
+!custom_config_json/example.json
+
+# Data directory
+.data/

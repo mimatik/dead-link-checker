@@ -1,0 +1,25 @@
+{
+  "name": "Example Configuration",
+  "start_url": "https://example.com",
+  "timeout": 15,
+  "delay": 0.5,
+  "max_depth": null,
+  "output_dir": "reports",
+  "show_skipped_links": false,
+  "whitelist_codes": [403, 999],
+  "domain_rules": {
+    "linkedin.com": {
+      "allowed_codes": [999, 429],
+      "description": "LinkedIn rate limiting"
+    },
+    "twitter.com": {
+      "allowed_codes": [403],
+      "description": "Twitter access restriction"
+    },
+    "x.com": {
+      "allowed_codes": [403],
+      "description": "X/Twitter access restriction"
+    }
+  }
+}
+
