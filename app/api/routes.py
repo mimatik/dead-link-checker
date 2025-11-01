@@ -150,6 +150,18 @@ def get_job(job_id: str):
         return jsonify({"error": str(e)}), 500
 
 
+@api_bp.route("/jobs/<job_id>/cancel", methods=["POST"])
+def cancel_job(job_id: str):
+    """Cancel a running or queued job"""
+    try:
+        jobs.cancel_job(job_id)
+        return jsonify({"message": f"Job '{job_id}' cancelled"}), 200
+    except ValueError as e:
+        return jsonify({"error": str(e)}), 400
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
 # Report endpoints
 @api_bp.route("/reports", methods=["GET"])
 def list_reports():

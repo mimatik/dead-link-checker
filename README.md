@@ -36,12 +36,26 @@ uv run python cli.py list-configs
 ```
 
 3. **Run via API + Web UI:**
-```bash
-# Start Flask API server
-uv run flask --app app run
 
-# API will be available at http://localhost:5000
-# Web UI (after frontend setup) at http://localhost:5000
+**Development mode (with hot reload):**
+```bash
+# Terminal 1: Start Flask API server (port 5555 kvůli AirPlay na Macu)
+uv run flask --app app --debug run --port 5555
+
+# Terminal 2: Start Vite dev server
+cd frontend
+npm run dev
+# Open http://localhost:5173
+```
+
+**Production mode (single server):**
+```bash
+# Build frontend
+cd frontend && npm run build && cd ..
+
+# Start Flask (serves API + built frontend)
+uv run flask --app app run --port 5555
+# Open http://localhost:5555
 ```
 
 4. **Results:** `reports/dead_links_report_DOMAIN_TIMESTAMP.csv`
@@ -70,8 +84,9 @@ dead_link_crawler/
 
 ### Commands
 
+**Backend:**
 ```bash
-# Install dependencies
+# Install Python dependencies
 uv sync
 
 # Run CLI
@@ -83,11 +98,28 @@ uv run flask --app app run
 # Run in development mode with auto-reload
 uv run flask --app app --debug run
 
-# Add new dependencies
+# Add new Python dependencies
 uv add package-name
 
-# Update dependencies
+# Update Python dependencies
 uv lock --upgrade
+```
+
+**Frontend:**
+```bash
+cd frontend
+
+# Install dependencies (first time only)
+npm install
+
+# Run development server
+npm run dev
+
+# Build for production
+npm run build
+
+# Preview production build
+npm run preview
 ```
 
 ## Configuration
@@ -177,6 +209,17 @@ curl -X POST http://localhost:5000/api/crawl \
 | link_url | URL of the problematic link |
 | link_text | Link text |
 | source_page | Page where the link is located |
+
+## Web UI
+
+Modern React-based web interface with:
+
+- **Dashboard** - View recent jobs and their status with live updates
+- **Configurations** - Create, edit, and manage crawl configurations
+- **Run Crawl** - Select a configuration and start a new crawl
+- **Reports** - Browse and download generated CSV reports
+
+The UI automatically refreshes job statuses and provides real-time feedback.
 
 ## API Endpoints
 

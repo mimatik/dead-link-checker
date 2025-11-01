@@ -163,9 +163,14 @@ def _run_job_thread(job_id: str):
 
         config = job["config"]
 
-        # Progress callback to update job stats
+        # Progress callback to update job stats in real-time
         def progress_callback(event_type: str, data: dict):
-            if event_type == "complete":
+            job = get_job(job_id)
+            if job and job.get("status") == "cancelled":
+                # Stop crawl if job was cancelled
+                raise Exception("Job cancelled by user")
+
+            if event_type in ["page_crawled", "link_checked", "complete"]:
                 update_job(
                     job_id,
                     {
@@ -231,3 +236,35 @@ def start_job(job_id: str):
     # Start job in background thread
     thread = threading.Thread(target=_run_job_thread, args=(job_id,), daemon=True)
     thread.start()
+
+
+def cancel_job(job_id: str):
+    """
+    Cancel a running or queued job
+
+    Args:
+        job_id: Job identifier
+    """
+    job = get_job(job_id)
+
+    if not job:
+        raise ValueError(f"Job '{job_id}' not found")
+
+    if job["status"] not in ["queued", "running"]:
+        raise ValueError(
+            f"Job '{job_id}' cannot be cancelled (status: {job['status']})"
+        )
+
+    # Update status to cancelled
+    update_job(
+        job_id,
+        {
+            "status": "cancelled",
+            "completed_at": datetime.now().isoformat(),
+        },
+    )
+
+    # Remove from active jobs
+    with jobs_lock:
+        if job_id in active_jobs:
+            del active_jobs[job_id]

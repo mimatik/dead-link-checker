@@ -240,11 +240,12 @@ class WebCrawler:
             self.pages_crawled = len(self.visited_pages)
 
             self._emit_progress(
-                "crawling",
+                "page_crawled",
                 {
                     "url": current_url,
-                    "current": len(self.visited_pages),
-                    "total": len(self.visited_pages) + len(self.to_visit),
+                    "pages_crawled": self.pages_crawled,
+                    "links_checked": self.links_checked,
+                    "errors_found": self.errors_found,
                 },
             )
 
@@ -317,6 +318,16 @@ class WebCrawler:
                         )
                     else:
                         self._emit_progress("success", {"url": link_url})
+
+                    # Emit progress update with current stats
+                    self._emit_progress(
+                        "link_checked",
+                        {
+                            "pages_crawled": self.pages_crawled,
+                            "links_checked": self.links_checked,
+                            "errors_found": self.errors_found,
+                        },
+                    )
 
                     # Add internal links to crawl queue
                     if self._should_add_to_queue(link_url):
