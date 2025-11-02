@@ -20,6 +20,7 @@ RUN uv sync --frozen --no-dev
 # Copy application code
 COPY app/ ./app/
 COPY cli.py ./
+COPY wsgi.py ./
 COPY gunicorn.conf.py ./
 
 # Copy built frontend
@@ -32,5 +33,5 @@ RUN mkdir -p /data
 EXPOSE 5555
 
 # Start with gunicorn
-CMD ["uv", "run", "gunicorn", "-c", "gunicorn.conf.py", "app:create_app"]
+CMD ["uv", "run", "gunicorn", "-c", "gunicorn.conf.py", "wsgi:application"]
 

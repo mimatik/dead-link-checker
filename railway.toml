@@ -3,7 +3,7 @@ builder = "dockerfile"
 dockerfilePath = "Dockerfile"
 
 [deploy]
-startCommand = "uv run gunicorn -c gunicorn.conf.py 'app:create_app'"
+startCommand = "uv run gunicorn -c gunicorn.conf.py wsgi:application"
 healthcheckPath = "/health"
 healthcheckTimeout = 100
 restartPolicyType = "on_failure"

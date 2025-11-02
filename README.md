@@ -53,8 +53,8 @@ npm run dev
 # Build frontend
 cd frontend && npm run build && cd ..
 
-# Start Flask (serves API + built frontend)
-uv run flask --app app run --port 5555
+# Start with Gunicorn (production WSGI server)
+PORT=5555 uv run gunicorn -c gunicorn.conf.py wsgi:application
 # Open http://localhost:5555
 ```
 

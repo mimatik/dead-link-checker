@@ -17,3 +17,6 @@ keepalive = 5
 errorlog = "-"  # Log to stdout
 accesslog = "-"  # Log to stdout
 loglevel = "info"
+
+# Preload application before forking workers
+preload_app = True
