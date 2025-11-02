@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { apiClient, type Config } from '../api/client';
 import FormField from '../components/FormField';
 
 export default function Configs() {
+  const navigate = useNavigate();
   const [configs, setConfigs] = useState<Config[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -41,7 +43,8 @@ export default function Configs() {
   const handleRunCheck = async (configId: string) => {
     try {
       await apiClient.startCrawl({ configId });
-      alert('Website check started successfully!');
+      // Redirect to dashboard to see the running job
+      navigate('/');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to start check');
     }
@@ -182,20 +185,49 @@ function ConfigModal({
   onClose: () => void;
   onSave: () => void;
 }) {
-  const [formData, setFormData] = useState<Partial<Config>>(
-    config || {
-      id: '',
-      name: '',
-      start_url: '',
-      timeout: 15,
-      delay: 0.5,
-      max_depth: null,
-      show_skipped_links: false,
-      whitelist_codes: [403, 999],
-    }
-  );
+  // Initialize with empty values
+  const [formData, setFormData] = useState<Partial<Config>>({
+    id: '',
+    name: '',
+    start_url: '',
+    timeout: 15,
+    delay: 0.5,
+    max_depth: null,
+    show_skipped_links: false,
+    whitelist_codes: [],
+    domain_rules: {},
+  });
+  
+  // Local state for form inputs
+  const [whitelistCodesInput, setWhitelistCodesInput] = useState<string>('');
+  const [domainRulesInput, setDomainRulesInput] = useState<string>('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Update form inputs when config changes (including initial mount)
+  useEffect(() => {
+    if (config) {
+      // Editing existing config
+      setFormData(config);
+      setWhitelistCodesInput(config.whitelist_codes?.join(', ') || '');
+      setDomainRulesInput(config.domain_rules ? JSON.stringify(config.domain_rules, null, 2) : '');
+    } else {
+      // Creating new config
+      setFormData({
+        id: '',
+        name: '',
+        start_url: '',
+        timeout: 15,
+        delay: 0.5,
+        max_depth: null,
+        show_skipped_links: false,
+        whitelist_codes: [],
+        domain_rules: {},
+      });
+      setWhitelistCodesInput('');
+      setDomainRulesInput('');
+    }
+  }, [config]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -203,15 +235,37 @@ function ConfigModal({
     setError(null);
 
     try {
+      // Parse whitelist_codes from comma-separated string
+      const whitelistCodes = whitelistCodesInput
+        .split(',')
+        .map((code) => parseInt(code.trim()))
+        .filter((code) => !isNaN(code));
+
+      // Parse domain_rules from JSON string
+      let domainRules = {};
+      if (domainRulesInput.trim()) {
+        try {
+          domainRules = JSON.parse(domainRulesInput);
+        } catch (err) {
+          throw new Error('Invalid JSON format for domain rules');
+        }
+      }
+
+      const configData = {
+        ...formData,
+        whitelist_codes: whitelistCodes,
+        domain_rules: domainRules,
+      };
+
       if (config) {
         // Update existing
-        await apiClient.updateConfig(config.id, formData);
+        await apiClient.updateConfig(config.id, configData);
       } else {
         // Create new
-        if (!formData.id) {
+        if (!configData.id) {
           throw new Error('Config ID is required');
         }
-        await apiClient.createConfig(formData as Config);
+        await apiClient.createConfig(configData as Config);
       }
       onSave();
     } catch (err) {
@@ -222,10 +276,10 @@ function ConfigModal({
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-        <form onSubmit={handleSubmit}>
-          <div className="p-6 space-y-4">
+    <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+      <div className="bg-white rounded-lg shadow-2xl max-w-2xl w-full max-h-[90vh] flex flex-col">
+        <form onSubmit={handleSubmit} className="flex flex-col h-full overflow-hidden">
+          <div className="p-6 space-y-4 overflow-y-auto flex-1">
             <h3 className="text-lg font-medium text-gray-900">
               {config ? 'Edit Configuration' : 'New Configuration'}
             </h3>
@@ -280,9 +334,82 @@ function ConfigModal({
                 step="0.1"
               />
             </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                Max Depth
+              </label>
+              <input
+                type="number"
+                value={formData.max_depth === null ? '' : formData.max_depth}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    max_depth: e.target.value === '' ? null : parseInt(e.target.value),
+                  })
+                }
+                placeholder="∞ (unlimited)"
+                min="1"
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm px-3 py-2"
+              />
+              <p className="mt-1 text-xs text-gray-500">
+                Leave empty for unlimited depth
+              </p>
+            </div>
+
+            <div>
+              <label className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  checked={formData.show_skipped_links || false}
+                  onChange={(e) =>
+                    setFormData({ ...formData, show_skipped_links: e.target.checked })
+                  }
+                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                />
+                <span className="text-sm font-medium text-gray-700">
+                  Show Skipped Links
+                </span>
+              </label>
+              <p className="mt-1 text-xs text-gray-500 ml-6">
+                Include skipped links in the report
+              </p>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                Whitelist Codes
+              </label>
+              <input
+                type="text"
+                value={whitelistCodesInput}
+                onChange={(e) => setWhitelistCodesInput(e.target.value)}
+                placeholder="e.g., 403, 999"
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm px-3 py-2"
+              />
+              <p className="mt-1 text-xs text-gray-500">
+                Comma-separated HTTP status codes to treat as valid (e.g., 403, 999)
+              </p>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                Domain Rules (JSON)
+              </label>
+              <textarea
+                value={domainRulesInput}
+                onChange={(e) => setDomainRulesInput(e.target.value)}
+                placeholder={'{\n  "linkedin.com": {\n    "allowed_codes": [999, 429],\n    "description": "LinkedIn rate limiting"\n  }\n}'}
+                rows={8}
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm px-3 py-2 font-mono text-xs"
+              />
+              <p className="mt-1 text-xs text-gray-500">
+                Domain-specific rules in JSON format
+              </p>
+            </div>
           </div>
 
-          <div className="bg-gray-50 px-6 py-3 flex justify-end space-x-3">
+          <div className="bg-gray-50 px-6 py-3 flex justify-end space-x-3 border-t border-gray-200 rounded-b-lg flex-shrink-0">
             <button
               type="button"
               onClick={onClose}

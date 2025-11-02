@@ -8,15 +8,16 @@ from datetime import datetime
 from typing import Dict, List, Optional
 
 from app.core import crawler
+from app.core.config import JOBS_FILE
 
-JOBS_FILE = ".data/jobs.json"
 jobs_lock = threading.Lock()
 active_jobs: Dict[str, Dict] = {}
 
 
 def _ensure_data_dir():
     """Ensure data directory exists"""
-    os.makedirs(".data", exist_ok=True)
+    # Directory is already created in config module
+    pass
 
 
 def _load_jobs() -> Dict:

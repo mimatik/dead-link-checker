@@ -29,25 +29,30 @@ class LinkChecker:
         # Domain-specific rules for known platforms
         default_domain_rules = {
             "linkedin.com": {
-                "allowed_codes": {999},
+                "allowed_codes": [999],
                 "description": "LinkedIn rate limiting",
                 "ignore_timeouts": False,
             },
             "twitter.com": {
-                "allowed_codes": {403},
+                "allowed_codes": [403],
                 "description": "Twitter access restriction",
                 "ignore_timeouts": False,
             },
             "x.com": {
-                "allowed_codes": {403},
+                "allowed_codes": [403],
                 "description": "X/Twitter access restriction",
                 "ignore_timeouts": False,
             },
         }
 
-        # Merge with config domain rules
+        # Merge with config domain rules and normalize allowed_codes to sets
         config_domain_rules = config.get("domain_rules", {})
         self.domain_rules = {**default_domain_rules, **config_domain_rules}
+
+        # Normalize allowed_codes to sets for efficient lookup
+        for domain, rules in self.domain_rules.items():
+            if "allowed_codes" in rules:
+                rules["allowed_codes"] = set(rules["allowed_codes"])
 
     def _get_domain(self, url: str) -> str:
         """Extract domain from URL, removing www prefix"""

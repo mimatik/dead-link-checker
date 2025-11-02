@@ -4,12 +4,13 @@ import json
 import os
 from typing import Dict, List
 
-CONFIG_DIR = "custom_config_json"
+from app.core.config import CONFIG_DIR
 
 
 def _ensure_config_dir():
     """Ensure configuration directory exists"""
-    os.makedirs(CONFIG_DIR, exist_ok=True)
+    # Directory is already created in config module
+    pass
 
 
 def _get_config_path(config_id: str) -> str:
@@ -22,7 +23,7 @@ def list_configs() -> List[Dict]:
     List all available configurations
 
     Returns:
-        List of config metadata (id, name, start_url)
+        List of complete configurations
     """
     _ensure_config_dir()
 
@@ -32,13 +33,9 @@ def list_configs() -> List[Dict]:
             config_id = filename[:-5]  # Remove .json extension
             try:
                 config = get_config(config_id)
-                configs.append(
-                    {
-                        "id": config_id,
-                        "name": config.get("name", config_id),
-                        "start_url": config.get("start_url", ""),
-                    }
-                )
+                # Add id to config if not present
+                config["id"] = config_id
+                configs.append(config)
             except Exception:
                 # Skip invalid configs
                 continue

@@ -5,6 +5,7 @@ import os
 from flask import Blueprint, jsonify, request, send_file
 
 from app.core import config_store, jobs
+from app.core.config import REPORTS_DIR
 
 api_bp = Blueprint("api", __name__, url_prefix="/api")
 
@@ -167,15 +168,13 @@ def cancel_job(job_id: str):
 def list_reports():
     """List available reports"""
     try:
-        reports_dir = "reports"
-
-        if not os.path.exists(reports_dir):
+        if not os.path.exists(REPORTS_DIR):
             return jsonify([]), 200
 
         reports = []
-        for filename in os.listdir(reports_dir):
+        for filename in os.listdir(REPORTS_DIR):
             if filename.endswith(".csv"):
-                filepath = os.path.join(reports_dir, filename)
+                filepath = os.path.join(REPORTS_DIR, filename)
                 stat = os.stat(filepath)
                 reports.append(
                     {
@@ -197,11 +196,10 @@ def list_reports():
 def download_report(filename: str):
     """Download a report file"""
     try:
-        reports_dir = "reports"
-        filepath = os.path.join(reports_dir, filename)
+        filepath = os.path.join(REPORTS_DIR, filename)
 
         # Security: prevent directory traversal
-        if not os.path.abspath(filepath).startswith(os.path.abspath(reports_dir)):
+        if not os.path.abspath(filepath).startswith(os.path.abspath(REPORTS_DIR)):
             return jsonify({"error": "Invalid filename"}), 400
 
         if not os.path.exists(filepath):

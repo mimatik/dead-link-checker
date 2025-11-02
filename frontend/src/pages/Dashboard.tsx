@@ -132,10 +132,12 @@ export default function Dashboard() {
                             job.status
                           )}`}
                         >
-                          {job.status}
-                          {job.status === 'running' && (
-                            <span className="ml-1 animate-pulse">●</span>
-                          )}
+                          
+                          {job.status === 'running' ? (
+                            <span className="ml-1 animate-pulse">
+                              {job.status} ●
+                            </span>
+                          ) : job.status}
                         </span>
                         <p className="text-sm font-medium text-blue-600 truncate">
                           {job.config.start_url}

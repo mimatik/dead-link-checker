@@ -1,5 +1,22 @@
 {
-  "name": "Example Configuration jj",
+  "name": "Example Configuration",
   "start_url": "https://example.com",
+  "whitelist_codes": [],
+  "domain_rules": {
+    "linkedin.com": {
+      "allowed_codes": [
+        999,
+        429
+      ],
+      "description": "LinkedIn rate limiting"
+    },
+    "sg.linkedin.com": {
+      "allowed_codes": [
+        999,
+        429
+      ],
+      "description": "LinkedIn Singapore rate limiting"
+    }
+  },
   "id": "example"
 }
