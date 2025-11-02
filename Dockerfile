@@ -32,5 +32,5 @@ RUN mkdir -p /data
 EXPOSE 5555
 
 # Start with gunicorn
-CMD ["uv", "run", "gunicorn", "-c", "gunicorn.conf.py", "app:create_app()"]
+CMD ["uv", "run", "gunicorn", "-c", "gunicorn.conf.py", "app:create_app"]
 
