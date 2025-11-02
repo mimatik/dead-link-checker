@@ -12,4 +12,10 @@ dependencies = [
     "flask-cors>=4.0.0",
     "gunicorn>=21.2.0",
     "click>=8.1.0",
+    "flask-httpauth>=4.8.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "ruff>=0.8.0",
 ]

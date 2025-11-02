@@ -4,6 +4,26 @@ import os
 
 from flask import Flask, send_from_directory
 from flask_cors import CORS
+from flask_httpauth import HTTPBasicAuth
+from werkzeug.security import check_password_hash, generate_password_hash
+
+# HTTP Basic Authentication setup
+auth = HTTPBasicAuth()
+
+# Users dictionary with hashed passwords
+users = {
+    os.environ.get("AUTH_USERNAME", "preview"): generate_password_hash(
+        os.environ.get("AUTH_PASSWORD", "pl34s3")
+    )
+}
+
+
+@auth.verify_password
+def verify_password(username, password):
+    """Verify username and password"""
+    if username in users and check_password_hash(users.get(username), password):
+        return username
+    return None
 
 
 def create_app(config=None):
@@ -17,6 +37,13 @@ def create_app(config=None):
     # Enable CORS for development
     if app.config.get("ENV") != "production":
         CORS(app, resources={r"/api/*": {"origins": "*"}})
+
+    # HTTP Basic Auth for production
+    @app.before_request
+    def require_auth():
+        """Require authentication in production environment"""
+        if os.environ.get("FLASK_ENV") == "production":
+            return auth.login_required(lambda: None)()
 
     # Register API blueprint
     from app.api import api_bp

@@ -7,10 +7,20 @@ PROJECT_ROOT = os.path.dirname(
     os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 )
 
-# Directories
-CONFIG_DIR = os.path.join(PROJECT_ROOT, "custom_config_json")
-REPORTS_DIR = os.path.join(PROJECT_ROOT, "reports")
-DATA_DIR = os.path.join(PROJECT_ROOT, ".data")
+# Detect Railway environment
+IS_RAILWAY = os.environ.get("RAILWAY_ENVIRONMENT") is not None
+
+if IS_RAILWAY:
+    # Use Railway volume mount
+    VOLUME_PATH = "/data"
+    CONFIG_DIR = os.path.join(VOLUME_PATH, "custom_config_json")
+    REPORTS_DIR = os.path.join(VOLUME_PATH, "reports")
+    DATA_DIR = os.path.join(VOLUME_PATH, ".data")
+else:
+    # Local development paths
+    CONFIG_DIR = os.path.join(PROJECT_ROOT, "custom_config_json")
+    REPORTS_DIR = os.path.join(PROJECT_ROOT, "reports")
+    DATA_DIR = os.path.join(PROJECT_ROOT, ".data")
 
 # Files
 JOBS_FILE = os.path.join(DATA_DIR, "jobs.json")

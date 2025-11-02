@@ -1,0 +1,47 @@
+# Node modules
+node_modules/
+frontend/node_modules/
+frontend/dist/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# Git
+.git/
+.gitignore
+
+# Data and reports
+.data/
+reports/
+
+# Configuration files (except example)
+custom_config_json/*.json
+!custom_config_json/example.json
+
+# Environment files
+.env
+.env.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Documentation
+*.md
+!README.md
+
+# Tests
+tests/
+*.test.js
+*.spec.js
+

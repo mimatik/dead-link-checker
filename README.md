@@ -89,6 +89,9 @@ dead_link_crawler/
 # Install Python dependencies
 uv sync
 
+# Install with dev dependencies (for linting)
+uv sync --extra dev
+
 # Run CLI
 uv run python cli.py crawl --config-id example
 
@@ -97,6 +100,9 @@ uv run flask --app app run
 
 # Run in development mode with auto-reload
 uv run flask --app app --debug run
+
+# Lint code with ruff
+uv run ruff check app/ cli.py
 
 # Add new Python dependencies
 uv add package-name
@@ -239,11 +245,68 @@ The UI automatically refreshes job statuses and provides real-time feedback.
 - `GET /api/reports` - List available reports
 - `GET /api/reports/:filename` - Download report file
 
+## Deployment
+
+### Production Deployment na Railway
+
+Aplikace je připravená pro deployment na Railway s Docker kontejnerizací.
+
+**Quick Start:**
+
+1. Vytvoř Railway účet a nainstaluj CLI
+2. Vytvoř Railway projekt a volume (`/data`, 1GB)
+3. Nastav environment variables (viz níže)
+4. Propoj GitHub repo s Railway
+5. Vytvoř GitHub secret `RAILWAY_TOKEN`
+6. Push do branch `build_flask_react_railway`
+
+**Environment Variables (Railway Dashboard):**
+
+```bash
+FLASK_APP=app:create_app
+FLASK_ENV=production
+PYTHON_VERSION=3.11
+AUTH_USERNAME=preview        # Změň!
+AUTH_PASSWORD=pl34s3         # Změň!
+```
+
+**HTTP Basic Authentication:**
+
+V production je aplikace chráněna HTTP Basic Auth s credentials z environment variables.
+
+**Detailní instrukce:** Viz [DEPLOYMENT.md](DEPLOYMENT.md)
+
+### Docker Build Lokálně
+
+```bash
+# Build image
+docker build -t dead-link-crawler .
+
+# Run container
+docker run -p 5555:5555 \
+  -e FLASK_ENV=production \
+  -e AUTH_USERNAME=preview \
+  -e AUTH_PASSWORD=pl34s3 \
+  dead-link-crawler
+
+# Test
+curl -u preview:pl34s3 http://localhost:5555/api/configs
+```
+
+### CI/CD
+
+GitHub Actions automaticky deployne na Railway při push do `build_flask_react_railway`:
+- Lint Python kódu (ruff)
+- Lint frontend kódu (eslint)
+- Build frontend
+- Deploy na Railway
+
 ## Tips
 
 - **Large websites:** Use `delay: 1-2` seconds
 - **Testing:** Set `max_depth: 2` for faster results
 - **Interruption:** CTRL+C saves partial report (CLI only)
+- **Production:** HTTP Basic Auth je aktivní pouze když `FLASK_ENV=production`
 
 ## License
 
