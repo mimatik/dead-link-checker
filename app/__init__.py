@@ -2,7 +2,7 @@
 
 import os
 
-from flask import Flask, send_from_directory
+from flask import Flask, request, send_from_directory
 from flask_cors import CORS
 from flask_httpauth import HTTPBasicAuth
 from werkzeug.security import check_password_hash, generate_password_hash
@@ -38,10 +38,20 @@ def create_app(config=None):
     if app.config.get("ENV") != "production":
         CORS(app, resources={r"/api/*": {"origins": "*"}})
 
-    # HTTP Basic Auth for production
+    # Health check endpoint (no auth required for Railway)
+    @app.route("/health")
+    def health_check():
+        """Health check endpoint for Railway deployment"""
+        return {"status": "healthy", "service": "dead-link-crawler"}, 200
+
+    # HTTP Basic Auth for production (excluding health endpoint)
     @app.before_request
     def require_auth():
         """Require authentication in production environment"""
+        # Skip auth for health check endpoint
+        if request.path == "/health":
+            return None
+
         if os.environ.get("FLASK_ENV") == "production":
             return auth.login_required(lambda: None)()
 

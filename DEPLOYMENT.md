@@ -182,12 +182,18 @@ V browseru se zobrazí login dialog.
 
 ### 9.2 Ověřit funkčnost
 
-1. Otevři Railway URL v browseru
-2. Zadej username a password (z environment variables)
-3. Zkontroluj, že se načítá frontend
-4. Vytvoř testovací konfiguraci
-5. Spusť crawl job
-6. Ověř, že se job zobrazuje na dashboardu
+1. **Test health endpoint** (bez autentizace):
+   ```bash
+   curl https://[your-railway-url]/health
+   # Očekávaný výstup: {"status":"healthy","service":"dead-link-crawler"}
+   ```
+
+2. Otevři Railway URL v browseru
+3. Zadej username a password (z environment variables)
+4. Zkontroluj, že se načítá frontend
+5. Vytvoř testovací konfiguraci
+6. Spusť crawl job
+7. Ověř, že se job zobrazuje na dashboardu
 
 ### 9.3 Ověřit persistent storage
 
@@ -216,6 +222,18 @@ Data v `/data` volume by měla přežít restart containeru:
 - Zkontroluj Railway deployment logs
 - Ověř environment variables (zvlášť `FLASK_APP`)
 - Zkontroluj, že PORT není hardcoded (Railway nastaví dynamicky)
+
+### Healthcheck Fails
+
+**Problem**: Deployment failuje s "healthcheck failed" nebo "service unavailable"
+
+**Řešení**:
+- Railway healthcheck endpoint: `/health` (bez autentizace)
+- Ověř v logs, že aplikace naslouchá na správném PORT
+- Railway používá hostname `healthcheck.railway.app` - musí být povolen
+- Test lokálně: `curl http://localhost:5555/health`
+- Zkontroluj `railway.toml`: `healthcheckPath = "/health"`
+- Default timeout je 100 sekund, můžeš zvýšit v `railway.toml`
 
 ### Volume Data Not Persisting
 
