@@ -102,7 +102,7 @@ AUTH_PASSWORD=pl34s3
 3. Klikni "Connect Repo"
 4. Vyber GitHub repository
 5. Nastav:
-   - **Branch**: `build_flask_react_railway`
+   - **Branch**: `deploy_railway`
    - **Auto-deploy**: Zapnuto (Railway automaticky detekuje Dockerfile)
 
 Railway automaticky vytvoří webhook v GitHub repository.
@@ -122,10 +122,10 @@ GitHub Actions workflow `.github/workflows/lint-and-test.yml` automaticky:
 
 ```bash
 # Vytvoř novou branch pro deployment
-git checkout -b build_flask_react_railway
+git checkout -b deploy_railway
 
 # Push do remote repository
-git push -u origin build_flask_react_railway
+git push -u origin deploy_railway
 ```
 
 Tento push:
@@ -274,9 +274,9 @@ curl -u preview:pl34s3 http://localhost:5555/api/configs
 
 Po initial setup:
 
-1. Pushni změny do `build_flask_react_railway` branch
+1. Pushni změny do `deploy_railway` branch
 2. GitHub Actions automaticky spustí lint + test
-3. Pokud vše projde, automaticky deployne na Railway
+3. Railway automaticky detekuje změny a deployne
 4. Railway rebuillde Docker image a restartuje aplikaci
 
 ## Costs

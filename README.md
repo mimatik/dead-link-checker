@@ -259,7 +259,7 @@ Aplikace je připravená pro deployment na Railway s Docker kontejnerizací.
 3. Nastav environment variables (viz níže)
 4. Propoj GitHub repo s Railway
 5. Vytvoř GitHub secret `RAILWAY_TOKEN`
-6. Push do branch `build_flask_react_railway`
+6. Push do branch `deploy_railway`
 
 **Environment Variables (Railway Dashboard):**
 
@@ -296,7 +296,7 @@ curl -u preview:pl34s3 http://localhost:5555/api/configs
 
 ### CI/CD
 
-GitHub Actions automaticky deployne na Railway při push do `build_flask_react_railway`:
+GitHub Actions automaticky spouští CI při push do `deploy_railway`:
 - Lint Python kódu (ruff)
 - Lint frontend kódu (eslint)
 - Build frontend

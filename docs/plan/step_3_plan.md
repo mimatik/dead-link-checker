@@ -202,7 +202,7 @@ AUTH_PASSWORD=pl34s3
 
 1. Railway dashboard → Settings → Connect Repo
 2. Vybrat GitHub repository
-3. Nastavit deploy branch: `build_flask_react_railway`
+3. Nastavit deploy branch: `deploy_railway`
 4. Railway automaticky detekuje Dockerfile
 
 ## Fáze 4: GitHub Actions CI/CD
@@ -217,7 +217,7 @@ name: Railway Deploy
 on:
   push:
     branches:
-         - build_flask_react_railway
+         - deploy_railway
 
 jobs:
   lint-and-test:
@@ -287,8 +287,8 @@ jobs:
 **MANUÁLNÍ:**
 
 ```bash
-git checkout -b build_flask_react_railway
-git push -u origin build_flask_react_railway
+git checkout -b deploy_railway
+git push -u origin deploy_railway
 ```
 
 ## Fáze 5: Railway nixpacks config (optional)
@@ -345,7 +345,7 @@ Detailní deployment guide pro budoucí reference.
 5. **GitHub Connection** (Fáze 3.5)
 
       - Propojit Railway projekt s GitHub repo
-      - Nastavit deploy branch na `build_flask_react_railway`
+      - Nastavit deploy branch na `deploy_railway`
 
 6. **Railway API Token** (Fáze 4.2)
 
@@ -354,7 +354,7 @@ Detailní deployment guide pro budoucí reference.
 
 7. **Create Deploy Branch** (Fáze 4.3)
 
-      - Vytvořit a pushnout branch `build_flask_react_railway`
+      - Vytvořit a pushnout branch `deploy_railway`
 
 8. **První Deploy Test**
 

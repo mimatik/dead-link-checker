@@ -3,10 +3,10 @@ name: Lint and Test
 on:
   push:
     branches:
-      - build_flask_react_railway
+      - deploy_railway
   pull_request:
     branches:
-      - build_flask_react_railway
+      - deploy_railway
 
 jobs:
   lint-and-test:
