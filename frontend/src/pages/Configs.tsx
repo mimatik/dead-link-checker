@@ -246,7 +246,7 @@ function ConfigModal({
       if (domainRulesInput.trim()) {
         try {
           domainRules = JSON.parse(domainRulesInput);
-        } catch (err) {
+        } catch {
           throw new Error('Invalid JSON format for domain rules');
         }
       }

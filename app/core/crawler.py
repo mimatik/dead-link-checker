@@ -11,6 +11,8 @@ from urllib.parse import urldefrag, urljoin, urlparse
 import requests
 from bs4 import BeautifulSoup
 
+from app.core.config import REPORTS_DIR
+
 
 class LinkChecker:
     """Checks individual URLs for availability"""
@@ -370,8 +372,8 @@ class WebCrawler:
         if not self.errors:
             return None
 
-        # Create output directory
-        output_dir = self.config.get("output_dir", "reports")
+        # Use centralized reports directory (handles Railway vs local paths)
+        output_dir = self.config.get("output_dir", REPORTS_DIR)
         os.makedirs(output_dir, exist_ok=True)
 
         # Generate filename with domain and timestamp
@@ -392,7 +394,8 @@ class WebCrawler:
             for error in self.errors:
                 writer.writerow(error)
 
-        return filename
+        # Return only the filename (not full path) for consistent API response
+        return os.path.basename(filename)
 
 
 def run_crawl(config: dict, progress_callback=None) -> dict:

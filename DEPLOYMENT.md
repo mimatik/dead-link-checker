@@ -107,29 +107,18 @@ AUTH_PASSWORD=pl34s3
 
 Railway automaticky vytvoří webhook v GitHub repository.
 
-## Krok 6: GitHub Actions Setup
+## Krok 6: GitHub Actions CI (Volitelné)
 
-### 6.1 Vytvořit Railway API Token
+> **ℹ️ Poznámka:** Railway automaticky deployuje při detekci změn v repozitáři pomocí GitHub integration (nastavena v Kroku 5), takže **není potřeba RAILWAY_TOKEN** ani deploy step v GitHub Actions.
 
-**V Railway Dashboard:**
+GitHub Actions workflow `.github/workflows/lint-and-test.yml` automaticky:
+1. ✅ Lintuje Python kód (ruff)
+2. ✅ Lintuje frontend kód (ESLint)
+3. ✅ Testuje frontend build
 
-1. Klikni na account (pravý horní roh) → "Account Settings"
-2. Jdi na "Tokens"
-3. Klikni "Create Token"
-4. Zkopíruj vygenerovaný token (ukaž se pouze jednou!)
+**Deploy probíhá přímo z Railway**, ne z GitHub Actions.
 
-### 6.2 Přidat GitHub Secret
-
-**V GitHub Repository:**
-
-1. Jdi na "Settings" → "Secrets and variables" → "Actions"
-2. Klikni "New repository secret"
-3. Nastav:
-   - **Name**: `RAILWAY_TOKEN`
-   - **Value**: [zkopírovaný token z Railway]
-4. Klikni "Add secret"
-
-## Krok 7: Vytvořit Deploy Branch
+## Krok 7: Vytvořit Deploy Branch a Push
 
 ```bash
 # Vytvoř novou branch pro deployment
@@ -139,21 +128,20 @@ git checkout -b build_flask_react_railway
 git push -u origin build_flask_react_railway
 ```
 
-Tento push spustí GitHub Actions workflow, který:
-1. Provede lint Python a frontend kódu
-2. Buildne frontend
-3. Deployne na Railway pomocí Railway CLI
+Tento push:
+1. ✅ Spustí GitHub Actions (lint & test)
+2. ✅ Railway automaticky detekuje změny a spustí build + deploy
 
 ## Krok 8: Monitorování Deployment
 
-### 8.1 GitHub Actions Log
+### 8.1 GitHub Actions Log (CI pouze)
 
 V GitHub repository:
 - Jdi na "Actions" tab
-- Sleduj běžící workflow "Railway Deploy"
-- Zkontroluj, že všechny kroky proběhly úspěšně
+- Sleduj běžící workflow "Lint and Test"
+- Zkontroluj, že všechny lint kroky proběhly úspěšně
 
-### 8.2 Railway Deployment Log
+### 8.2 Railway Deployment Log (Hlavní Deploy)
 
 V Railway Dashboard:
 - Otevři projekt
