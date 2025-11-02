@@ -39,12 +39,12 @@ uv run python cli.py list-configs
 
 **Development mode (with hot reload):**
 ```bash
-# Terminal 1: Start Flask API server (port 5555 kvůli AirPlay na Macu)
-uv run flask --app app --debug run --port 5555
+# Terminal 1: Start backend (Flask dev server with hot reload)
+./run_backend dev
+# or: uv run flask --app app:create_app --debug run --host 0.0.0.0 --port 5555
 
-# Terminal 2: Start Vite dev server
-cd frontend
-npm run dev
+# Terminal 2: Start frontend (Vite dev server)
+cd frontend && npm run dev
 # Open http://localhost:5173
 ```
 
@@ -53,8 +53,9 @@ npm run dev
 # Build frontend
 cd frontend && npm run build && cd ..
 
-# Start with Gunicorn (production WSGI server)
-PORT=5555 uv run gunicorn -c gunicorn.conf.py wsgi:application
+# Start backend (Gunicorn production server)
+./run_backend prod
+# or: PORT=5555 uv run gunicorn -c gunicorn.conf.py wsgi:application
 # Open http://localhost:5555
 ```
 

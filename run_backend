@@ -1,0 +1,52 @@
+#!/bin/bash
+
+# Run backend server script
+# Usage: ./run_backend [dev|prod]
+
+set -e
+
+MODE="${1:-dev}"
+
+# Show help
+if [ "$MODE" = "-h" ] || [ "$MODE" = "--help" ]; then
+    echo "Backend Server Runner"
+    echo ""
+    echo "Usage: ./run_backend [dev|prod]"
+    echo ""
+    echo "Modes:"
+    echo "  dev   - Development mode with Flask dev server (hot reload)"
+    echo "  prod  - Production mode with Gunicorn WSGI server"
+    echo ""
+    echo "Examples:"
+    echo "  ./run_backend       # Start in dev mode (default)"
+    echo "  ./run_backend dev   # Start in dev mode"
+    echo "  ./run_backend prod  # Start in prod mode"
+    exit 0
+fi
+
+echo "🚀 Starting backend server in $MODE mode..."
+echo ""
+
+if [ "$MODE" = "prod" ]; then
+    # Production mode with Gunicorn
+    echo "📦 Production mode - using Gunicorn"
+    echo "🌐 Server will be available at http://localhost:5555"
+    echo "🔐 Auth: preview / pl34s3 (in production environment)"
+    echo ""
+    PORT=5555 FLASK_ENV=production uv run gunicorn -c gunicorn.conf.py wsgi:application
+elif [ "$MODE" = "dev" ]; then
+    # Development mode with Flask dev server
+    echo "🔧 Development mode - using Flask dev server"
+    echo "🌐 Server will be available at http://localhost:5555"
+    echo "♻️  Hot reload enabled"
+    echo "🔓 No auth required in dev mode"
+    echo ""
+    uv run flask --app app:create_app --debug run --host 0.0.0.0 --port 5555
+else
+    echo "❌ Invalid mode: $MODE"
+    echo ""
+    echo "Usage: ./run_backend [dev|prod]"
+    echo "Run './run_backend --help' for more information"
+    exit 1
+fi
+

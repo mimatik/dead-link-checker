@@ -97,10 +97,13 @@ class LinkChecker:
             if domain in self.domain_rules:
                 domain_rule = self.domain_rules[domain]
                 if status_code in domain_rule["allowed_codes"]:
+                    description = domain_rule.get(
+                        "description", f"Domain rule for {domain}"
+                    )
                     return (
                         False,
                         status_code,
-                        f"{domain_rule['description']} ({status_code})",
+                        f"{description} ({status_code})",
                     )
 
             # Check global whitelist
@@ -116,10 +119,13 @@ class LinkChecker:
             if domain in self.domain_rules:
                 domain_rule = self.domain_rules[domain]
                 if domain_rule.get("ignore_timeouts", False):
+                    description = domain_rule.get(
+                        "description", f"Domain rule for {domain}"
+                    )
                     return (
                         False,
                         None,
-                        f"{domain_rule['description']} (timeout ignored)",
+                        f"{description} (timeout ignored)",
                     )
             return True, None, "Timeout"
 
