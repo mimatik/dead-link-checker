@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
 import { apiClient, type Job } from '../api/client';
+import ConfigModal from '../components/ConfigModal';
 
 export default function Dashboard() {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showConfigModal, setShowConfigModal] = useState(false);
 
   useEffect(() => {
     loadJobs();
@@ -36,6 +37,25 @@ export default function Dashboard() {
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to cancel job');
     }
+  };
+
+  const handleRerunJob = async (job: Job) => {
+    try {
+      // Use the config from the job to rerun it
+      if (job.config_id) {
+        await apiClient.startCrawl({ configId: job.config_id });
+      } else {
+        // If no config_id, use the config directly
+        await apiClient.startCrawl({ config: job.config });
+      }
+      await loadJobs(); // Refresh jobs list
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to rerun job');
+    }
+  };
+
+  const handleCreateConfigAndRun = () => {
+    setShowConfigModal(true);
   };
 
   const getStatusColor = (status: Job['status']) => {
@@ -77,13 +97,13 @@ export default function Dashboard() {
             Recent crawl jobs and their status (auto-refresh every 5s)
           </p>
         </div>
-        <Link
-          to="/configs"
+        <button
+          onClick={handleCreateConfigAndRun}
           className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
         >
           <span className="mr-2">▶</span>
           Run New Check
-        </Link>
+        </button>
       </div>
 
       {/* Error Message */}
@@ -110,12 +130,12 @@ export default function Dashboard() {
             Get started by running your first check.
           </p>
           <div className="mt-6">
-            <Link
-              to="/configs"
+            <button
+              onClick={handleCreateConfigAndRun}
               className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
             >
               Run New Check
-            </Link>
+            </button>
           </div>
         </div>
       ) : (
@@ -150,13 +170,24 @@ export default function Dashboard() {
                         <span className="font-medium">
                           🔗 {job.stats.links_checked} links
                         </span>
-                        <span className="font-medium">
-                          ❌ {job.stats.errors_found} errors
-                        </span>
+                        {job.stats.errors_found > 0 && (
+                          <span className="font-medium">
+                            ❌ {job.stats.errors_found} errors
+                          </span>
+                        )}
                         <span>🕐 {formatDate(job.created_at)}</span>
                       </div>
                     </div>
                     <div className="flex items-center space-x-3">
+                      {(job.status === 'completed' || job.status === 'failed' || job.status === 'cancelled') && (
+                        <button
+                          onClick={() => handleRerunJob(job)}
+                          className="flex-shrink-0 text-green-600 hover:text-green-700 text-lg"
+                          title="Rerun"
+                        >
+                          🔄
+                        </button>
+                      )}
                       {(job.status === 'running' || job.status === 'queued') && (
                         <button
                           onClick={() => handleCancelJob(job.id)}
@@ -188,6 +219,29 @@ export default function Dashboard() {
             ))}
           </ul>
         </div>
+      )}
+
+      {/* Config Modal for creating new config and running crawl */}
+      {showConfigModal && (
+        <ConfigModal
+          config={null}
+          onClose={() => {
+            setShowConfigModal(false);
+          }}
+          onSave={async (configId?: string) => {
+            setShowConfigModal(false);
+            // Start crawl with the newly created config
+            try {
+              if (configId) {
+                await apiClient.startCrawl({ configId });
+              }
+              await loadJobs(); // Refresh jobs list
+            } catch (err) {
+              setError(err instanceof Error ? err.message : 'Failed to start crawl');
+            }
+          }}
+          saveButtonText="Save & Run"
+        />
       )}
     </div>
   );
