@@ -179,15 +179,6 @@ export default function Dashboard() {
                       </div>
                     </div>
                     <div className="flex items-center space-x-3">
-                      {(job.status === 'completed' || job.status === 'failed' || job.status === 'cancelled') && (
-                        <button
-                          onClick={() => handleRerunJob(job)}
-                          className="flex-shrink-0 text-green-600 hover:text-green-700 text-lg"
-                          title="Rerun"
-                        >
-                          🔄
-                        </button>
-                      )}
                       {(job.status === 'running' || job.status === 'queued') && (
                         <button
                           onClick={() => handleCancelJob(job.id)}
@@ -206,6 +197,15 @@ export default function Dashboard() {
                         >
                           Download Report
                         </a>
+                      )}
+                      {(job.status === 'completed' || job.status === 'failed' || job.status === 'cancelled') && (
+                        <button
+                          onClick={() => handleRerunJob(job)}
+                          className="flex-shrink-0 text-green-600 hover:text-green-700 text-lg"
+                          title="Rerun"
+                        >
+                          🔄
+                        </button>
                       )}
                     </div>
                   </div>
