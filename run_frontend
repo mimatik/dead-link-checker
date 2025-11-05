@@ -1,0 +1,73 @@
+#!/bin/bash
+
+# Run frontend development server script
+# Usage: ./run_frontend [dev|build|preview]
+
+set -e
+
+MODE="${1:-dev}"
+
+# Show help
+if [ "$MODE" = "-h" ] || [ "$MODE" = "--help" ]; then
+    echo "Frontend Development Server Runner"
+    echo ""
+    echo "Usage: ./run_frontend [dev|build|preview]"
+    echo ""
+    echo "Modes:"
+    echo "  dev      - Development mode with Vite dev server (hot reload)"
+    echo "  build    - Build production bundle"
+    echo "  preview  - Preview production build"
+    echo ""
+    echo "Examples:"
+    echo "  ./run_frontend       # Start in dev mode (default)"
+    echo "  ./run_frontend dev   # Start in dev mode"
+    echo "  ./run_frontend build  # Build for production"
+    echo "  ./run_frontend preview # Preview production build"
+    exit 0
+fi
+
+# Get the directory where this script is located
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$SCRIPT_DIR"
+
+echo "🚀 Starting frontend in $MODE mode..."
+echo ""
+
+if [ "$MODE" = "build" ]; then
+    # Build production bundle
+    echo "📦 Building production bundle..."
+    cd frontend
+    npm run build
+    echo ""
+    echo "✅ Build completed! Output in frontend/dist/"
+elif [ "$MODE" = "preview" ]; then
+    # Preview production build
+    echo "👀 Previewing production build..."
+    cd frontend
+    npm run preview
+elif [ "$MODE" = "dev" ]; then
+    # Development mode with Vite dev server
+    echo "🔧 Development mode - using Vite dev server"
+    echo "🌐 Server will be available at http://localhost:5173"
+    echo "♻️  Hot reload enabled"
+    echo "🔗 API proxy configured to http://localhost:5555"
+    echo ""
+    
+    # Check if node_modules exists, if not, install dependencies
+    if [ ! -d "frontend/node_modules" ]; then
+        echo "📦 Installing dependencies..."
+        cd frontend
+        npm install
+        cd ..
+    fi
+    
+    cd frontend
+    npm run dev
+else
+    echo "❌ Invalid mode: $MODE"
+    echo ""
+    echo "Usage: ./run_frontend [dev|build|preview]"
+    echo "Run './run_frontend --help' for more information"
+    exit 1
+fi
+

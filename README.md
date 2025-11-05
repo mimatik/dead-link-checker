@@ -39,24 +39,25 @@ uv run python cli.py list-configs
 
 **Development mode (with hot reload):**
 ```bash
-# Terminal 1: Start backend (Flask dev server with hot reload)
-./run_backend dev
-# or: uv run flask --app app:create_app --debug run --host 0.0.0.0 --port 5555
+./run_all dev
+# Backend: http://localhost:5555
+# Frontend: http://localhost:5173
 
-# Terminal 2: Start frontend (Vite dev server)
-cd frontend && npm run dev
-# Open http://localhost:5173
+./run_backend dev
+
+./run_frontend dev
+# or: cd frontend && npm run dev
 ```
 
 **Production mode (single server):**
 ```bash
-# Build frontend
-cd frontend && npm run build && cd ..
+./run_all prod
+# Backend: http://localhost:5555
+# Frontend preview: http://localhost:4173
 
-# Start backend (Gunicorn production server)
+./run_frontend build
+
 ./run_backend prod
-# or: PORT=5555 uv run gunicorn -c gunicorn.conf.py wsgi:application
-# Open http://localhost:5555
 ```
 
 4. **Results:** `reports/dead_links_report_DOMAIN_TIMESTAMP.csv`
@@ -85,6 +86,18 @@ dead_link_crawler/
 
 ### Commands
 
+**Quick Start Scripts:**
+```bash
+# Run backend server
+./run_backend [dev|prod]
+
+# Run frontend server
+./run_frontend [dev|build|preview]
+
+# Run both servers simultaneously
+./run_all [dev|prod]
+```
+
 **Backend:**
 ```bash
 # Install Python dependencies
@@ -96,11 +109,11 @@ uv sync --extra dev
 # Run CLI
 uv run python cli.py crawl --config-id example
 
-# Run API server
-uv run flask --app app run
+# Run API server (or use ./run_backend)
+uv run flask --app app:create_app --debug run --host 0.0.0.0 --port 5555
 
-# Run in development mode with auto-reload
-uv run flask --app app --debug run
+# Run in production mode (or use ./run_backend prod)
+PORT=5555 FLASK_ENV=production uv run gunicorn -c gunicorn.conf.py wsgi:application
 
 # Lint code with ruff
 uv run ruff check app/ cli.py
@@ -114,6 +127,10 @@ uv lock --upgrade
 
 **Frontend:**
 ```bash
+# Using script (recommended)
+./run_frontend [dev|build|preview]
+
+# Or manually
 cd frontend
 
 # Install dependencies (first time only)

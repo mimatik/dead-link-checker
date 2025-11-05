@@ -1,0 +1,128 @@
+#!/bin/bash
+
+# Run both backend and frontend servers simultaneously
+# Usage: ./run_all [dev|prod]
+
+set -e
+
+MODE="${1:-dev}"
+
+# Show help
+if [ "$MODE" = "-h" ] || [ "$MODE" = "--help" ]; then
+    echo "Run Both Backend and Frontend Servers"
+    echo ""
+    echo "Usage: ./run_all [dev|prod]"
+    echo ""
+    echo "Modes:"
+    echo "  dev   - Development mode (Flask dev server + Vite dev server)"
+    echo "  prod  - Production mode (Gunicorn + Vite preview)"
+    echo ""
+    echo "Examples:"
+    echo "  ./run_all       # Start both in dev mode (default)"
+    echo "  ./run_all dev   # Start both in dev mode"
+    echo "  ./run_all prod  # Start both in prod mode"
+    echo ""
+    echo "Note: Use Ctrl+C to stop both servers"
+    exit 0
+fi
+
+# Get the directory where this script is located
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$SCRIPT_DIR"
+
+# Function to cleanup background processes on exit
+cleanup() {
+    echo ""
+    echo "🛑 Stopping servers..."
+    kill $BACKEND_PID $FRONTEND_PID 2>/dev/null || true
+    wait $BACKEND_PID $FRONTEND_PID 2>/dev/null || true
+    echo "✅ Servers stopped"
+    exit 0
+}
+
+# Set trap to cleanup on script exit
+trap cleanup SIGINT SIGTERM EXIT
+
+echo "🚀 Starting both servers in $MODE mode..."
+echo ""
+
+if [ "$MODE" = "prod" ]; then
+    # Production mode
+    echo "📦 Production mode"
+    echo "🌐 Backend: http://localhost:5555"
+    echo "🌐 Frontend: http://localhost:4173 (preview)"
+    echo ""
+    
+    # Start backend in background
+    echo "🔧 Starting backend (Gunicorn)..."
+    PORT=5555 FLASK_ENV=production uv run gunicorn -c gunicorn.conf.py wsgi:application &
+    BACKEND_PID=$!
+    
+    # Wait a bit for backend to start
+    sleep 2
+    
+    # Check if frontend is built
+    if [ ! -d "frontend/dist" ]; then
+        echo "📦 Building frontend for production..."
+        cd frontend
+        npm run build
+        cd ..
+    fi
+    
+    # Start frontend preview in background
+    echo "🔧 Starting frontend (Vite preview)..."
+    cd frontend
+    npm run preview &
+    FRONTEND_PID=$!
+    cd ..
+    
+elif [ "$MODE" = "dev" ]; then
+    # Development mode
+    echo "🔧 Development mode"
+    echo "🌐 Backend: http://localhost:5555"
+    echo "🌐 Frontend: http://localhost:5173"
+    echo "♻️  Hot reload enabled for both"
+    echo ""
+    
+    # Check if frontend dependencies are installed
+    if [ ! -d "frontend/node_modules" ]; then
+        echo "📦 Installing frontend dependencies..."
+        cd frontend
+        npm install
+        cd ..
+    fi
+    
+    # Start backend in background
+    echo "🔧 Starting backend (Flask dev server)..."
+    uv run flask --app app:create_app --debug run --host 0.0.0.0 --port 5555 &
+    BACKEND_PID=$!
+    
+    # Wait a bit for backend to start
+    sleep 2
+    
+    # Start frontend in background
+    echo "🔧 Starting frontend (Vite dev server)..."
+    cd frontend
+    npm run dev &
+    FRONTEND_PID=$!
+    cd ..
+    
+else
+    echo "❌ Invalid mode: $MODE"
+    echo ""
+    echo "Usage: ./run_all [dev|prod]"
+    echo "Run './run_all --help' for more information"
+    exit 1
+fi
+
+echo ""
+echo "✅ Both servers are running!"
+echo "📊 Backend PID: $BACKEND_PID"
+echo "📊 Frontend PID: $FRONTEND_PID"
+echo ""
+echo "Press Ctrl+C to stop both servers"
+echo ""
+
+# Wait for both processes
+wait $BACKEND_PID $FRONTEND_PID
+
