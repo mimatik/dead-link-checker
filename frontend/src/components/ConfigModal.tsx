@@ -179,7 +179,7 @@ export default function ConfigModal({
       }
 
       // For new configs, ensure we have ID and name
-      let finalConfigData = { ...formData };
+      const finalConfigData = { ...formData };
       
       if (!config) {
         // Generate ID and name if not set
