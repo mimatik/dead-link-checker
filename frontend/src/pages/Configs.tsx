@@ -2,6 +2,17 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { apiClient, type Config } from '../api/client';
 import ConfigModal from '../components/ConfigModal';
+import Button from '../components/Button';
+import {
+  PlusIcon,
+  PlayIcon,
+  PencilIcon,
+  TrashIcon,
+  Cog6ToothIcon,
+  ClockIcon,
+  PauseIcon,
+  ArrowPathIcon,
+} from '@heroicons/react/24/outline';
 
 export default function Configs() {
   const navigate = useNavigate();
@@ -63,7 +74,7 @@ export default function Configs() {
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900"></div>
       </div>
     );
   }
@@ -71,20 +82,23 @@ export default function Configs() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
         <div>
-          <h2 className="text-3xl font-bold text-gray-900">Website Checks</h2>
+          <h2 className="text-2xl sm:text-3xl font-bold text-gray-900">Website Checks</h2>
           <p className="mt-1 text-sm text-gray-500">
             Manage and run your website checks
           </p>
         </div>
-        <button
-          onClick={handleCreate}
-          className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
-        >
-          <span className="mr-2">+</span>
-          New Website Check
-        </button>
+        <div className="flex items-center space-x-3">
+          <Button
+            onClick={handleCreate}
+            variant="primary"
+            icon={<PlusIcon className="w-4 h-4" />}
+          >
+            <span className="hidden sm:inline">New Check</span>
+            <span className="sm:hidden">New</span>
+          </Button>
+        </div>
       </div>
 
       {/* Error Message */}
@@ -96,8 +110,8 @@ export default function Configs() {
 
       {/* Configs Grid */}
       {configs.length === 0 ? (
-        <div className="text-center py-12 bg-white rounded-lg shadow">
-          <span className="text-6xl">⚙️</span>
+        <div className="text-center py-12 bg-white rounded-lg">
+          <Cog6ToothIcon className="mx-auto h-12 w-12 text-gray-400" />
           <h3 className="mt-2 text-sm font-medium text-gray-900">
             No configurations yet
           </h3>
@@ -110,7 +124,7 @@ export default function Configs() {
           {configs.map((config) => (
             <div
               key={config.id}
-              className="bg-white overflow-hidden shadow rounded-lg hover:shadow-md transition-shadow"
+              className="bg-white overflow-hidden border border-gray-200 rounded-lg hover:shadow-md transition-shadow"
             >
               <div className="p-5">
                 <div className="flex items-center justify-between mb-3">
@@ -118,37 +132,48 @@ export default function Configs() {
                     {config.name}
                   </h3>
                 </div>
-                <p className="text-sm text-blue-600 mb-4 truncate">
+                <p className="text-sm text-gray-600 mb-4 truncate">
                   {config.start_url}
                 </p>
-                <div className="space-y-1 text-sm text-gray-500">
-                  <p>⏱ Timeout: {config.timeout || 15}s</p>
-                  <p>⏸ Delay: {config.delay || 0.5}s</p>
-                  <p>
-                    📏 Max depth: {config.max_depth === null ? '∞' : config.max_depth}
-                  </p>
+                <div className="space-y-2 text-sm text-gray-500">
+                  <div className="flex items-center">
+                    <ClockIcon className="w-4 h-4 mr-2" />
+                    Timeout: {config.timeout || 15}s
+                  </div>
+                  <div className="flex items-center">
+                    <PauseIcon className="w-4 h-4 mr-2" />
+                    Delay: {config.delay || 0.5}s
+                  </div>
+                  <div className="flex items-center">
+                    <ArrowPathIcon className="w-4 h-4 mr-2" />
+                    Max depth: {config.max_depth === null ? '∞' : config.max_depth}
+                  </div>
                 </div>
               </div>
-              <div className="bg-gray-50 px-5 py-3 flex justify-between">
-                <button
+              <div className="bg-gray-50 px-5 py-3 flex justify-between border-t border-gray-200">
+                <Button
                   onClick={() => handleRunCheck(config.id)}
-                  className="inline-flex items-center px-3 py-1.5 border border-transparent rounded-md text-sm font-medium text-white bg-green-600 hover:bg-green-700"
+                  variant="primary"
+                  size="sm"
+                  icon={<PlayIcon className="w-4 h-4" />}
                 >
-                  ▶ Run Check
-                </button>
+                  Run
+                </Button>
                 <div className="flex space-x-3">
-                  <button
+                  <Button
                     onClick={() => handleEdit(config)}
-                    className="text-sm text-blue-600 hover:text-blue-500 font-medium"
+                    variant="icon"
+                    className="text-sm"
                   >
-                    Edit
-                  </button>
-                  <button
+                    <PencilIcon className="w-4 h-4" />
+                  </Button>
+                  <Button
                     onClick={() => handleDelete(config.id)}
-                    className="text-sm text-red-600 hover:text-red-500 font-medium"
+                    variant="icon"
+                    className="text-sm !text-red-600 hover:!text-red-700"
                   >
-                    Delete
-                  </button>
+                    <TrashIcon className="w-4 h-4" />
+                  </Button>
                 </div>
               </div>
             </div>
