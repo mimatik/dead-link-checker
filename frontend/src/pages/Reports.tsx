@@ -1,13 +1,10 @@
 import { useEffect, useState } from 'react';
 import { apiClient, type Report } from '../api/client';
-import Button from '../components/Button';
 import {
   DocumentTextIcon,
   ArrowDownTrayIcon,
   ClockIcon,
   FolderIcon,
-  MagnifyingGlassIcon,
-  Cog6ToothIcon,
 } from '@heroicons/react/24/outline';
 
 export default function Reports() {
@@ -60,20 +57,6 @@ export default function Reports() {
           </p>
         </div>
         <div className="flex items-center space-x-3">
-          {/* <Button
-            variant="secondary"
-            className="hidden sm:inline-flex"
-            icon={<MagnifyingGlassIcon className="w-4 h-4" />}
-          >
-            Search
-          </Button>
-          <Button
-            variant="secondary"
-            className="hidden sm:inline-flex"
-            icon={<Cog6ToothIcon className="w-4 h-4" />}
-          >
-            View settings
-          </Button> */}
         </div>
       </div>
 
@@ -83,20 +66,6 @@ export default function Reports() {
           <p className="text-sm text-red-700">{error}</p>
         </div>
       )}
-
-      {/* Search Bar */}
-      {/* {reports.length > 0 && (
-        <div className="relative">
-          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <MagnifyingGlassIcon className="h-5 w-5 text-gray-400" />
-          </div>
-          <input
-            type="text"
-            className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg bg-white text-sm placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-gray-900 focus:border-gray-900"
-            placeholder="Search..."
-          />
-        </div>
-      )} */}
 
       {/* Reports List */}
       {reports.length === 0 ? (
