@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { apiClient, type Config } from '../api/client';
 import FormField from './FormField';
+import Button from './Button';
 
 interface ConfigModalProps {
   config: Config | null;
@@ -240,12 +241,12 @@ export default function ConfigModal({
       <div className="bg-white rounded-lg shadow-2xl max-w-2xl w-full max-h-[90vh] flex flex-col">
         <form onSubmit={handleSubmit} className="flex flex-col h-full overflow-hidden">
           <div className="p-6 space-y-4 overflow-y-auto flex-1">
-            <h3 className="text-lg font-medium text-gray-900">
+            <h3 className="text-xl font-semibold text-gray-900">
               {config ? 'Edit Configuration' : 'New Configuration'}
             </h3>
 
             {error && (
-              <div className="rounded-md bg-red-50 p-4">
+              <div className="rounded-lg bg-red-50 p-4 border border-red-200">
                 <p className="text-sm text-red-700">{error}</p>
               </div>
             )}
@@ -313,7 +314,7 @@ export default function ConfigModal({
                 }
                 placeholder="∞ (unlimited)"
                 min="1"
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm px-3 py-2"
+                className="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-gray-900 focus:ring-gray-900 sm:text-sm px-3 py-2"
               />
               <p className="mt-1 text-xs text-gray-500">
                 Leave empty for unlimited depth
@@ -328,7 +329,7 @@ export default function ConfigModal({
                   onChange={(e) =>
                     setFormData({ ...formData, show_skipped_links: e.target.checked })
                   }
-                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  className="rounded border-gray-300 text-gray-900 focus:ring-gray-900"
                 />
                 <span className="text-sm font-medium text-gray-700">
                   Show Skipped Links
@@ -348,7 +349,7 @@ export default function ConfigModal({
                 value={whitelistCodesInput}
                 onChange={(e) => setWhitelistCodesInput(e.target.value)}
                 placeholder="e.g., 403, 999"
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm px-3 py-2"
+                className="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-gray-900 focus:ring-gray-900 sm:text-sm px-3 py-2"
               />
               <p className="mt-1 text-xs text-gray-500">
                 Comma-separated HTTP status codes to treat as valid (e.g., 403, 999)
@@ -364,7 +365,7 @@ export default function ConfigModal({
                 onChange={(e) => setDomainRulesInput(e.target.value)}
                 placeholder={'{\n  "linkedin.com": {\n    "allowed_codes": [999, 429],\n    "description": "LinkedIn rate limiting (optional)"\n  }\n}'}
                 rows={8}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm px-3 py-2 font-mono text-xs"
+                className="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-gray-900 focus:ring-gray-900 sm:text-sm px-3 py-2 font-mono text-xs"
               />
               <p className="mt-1 text-xs text-gray-500">
                 Domain-specific rules in JSON format. Field 'description' is optional.
@@ -373,20 +374,20 @@ export default function ConfigModal({
           </div>
 
           <div className="bg-gray-50 px-6 py-3 flex justify-end space-x-3 border-t border-gray-200 rounded-b-lg flex-shrink-0">
-            <button
+            <Button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+              variant="secondary"
             >
               Cancel
-            </button>
-            <button
+            </Button>
+            <Button
               type="submit"
               disabled={saving}
-              className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400"
+              variant="primary"
             >
               {saving ? 'Saving...' : saveButtonText}
-            </button>
+            </Button>
           </div>
         </form>
       </div>

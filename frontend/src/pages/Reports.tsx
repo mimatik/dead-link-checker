@@ -1,5 +1,14 @@
 import { useEffect, useState } from 'react';
 import { apiClient, type Report } from '../api/client';
+import Button from '../components/Button';
+import {
+  DocumentTextIcon,
+  ArrowDownTrayIcon,
+  ClockIcon,
+  FolderIcon,
+  MagnifyingGlassIcon,
+  Cog6ToothIcon,
+} from '@heroicons/react/24/outline';
 
 export default function Reports() {
   const [reports, setReports] = useState<Report[]>([]);
@@ -35,7 +44,7 @@ export default function Reports() {
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900"></div>
       </div>
     );
   }
@@ -43,11 +52,29 @@ export default function Reports() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div>
-        <h2 className="text-3xl font-bold text-gray-900">Reports</h2>
-        <p className="mt-1 text-sm text-gray-500">
-          Download and view crawl reports
-        </p>
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
+        <div>
+          <h2 className="text-2xl sm:text-3xl font-bold text-gray-900">Reports</h2>
+          <p className="mt-1 text-sm text-gray-500">
+            Download and view crawl reports
+          </p>
+        </div>
+        <div className="flex items-center space-x-3">
+          {/* <Button
+            variant="secondary"
+            className="hidden sm:inline-flex"
+            icon={<MagnifyingGlassIcon className="w-4 h-4" />}
+          >
+            Search
+          </Button>
+          <Button
+            variant="secondary"
+            className="hidden sm:inline-flex"
+            icon={<Cog6ToothIcon className="w-4 h-4" />}
+          >
+            View settings
+          </Button> */}
+        </div>
       </div>
 
       {/* Error Message */}
@@ -57,47 +84,120 @@ export default function Reports() {
         </div>
       )}
 
+      {/* Search Bar */}
+      {/* {reports.length > 0 && (
+        <div className="relative">
+          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <MagnifyingGlassIcon className="h-5 w-5 text-gray-400" />
+          </div>
+          <input
+            type="text"
+            className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg bg-white text-sm placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-gray-900 focus:border-gray-900"
+            placeholder="Search..."
+          />
+        </div>
+      )} */}
+
       {/* Reports List */}
       {reports.length === 0 ? (
-        <div className="text-center py-12 bg-white rounded-lg shadow">
-          <span className="text-6xl">📄</span>
+        <div className="text-center py-12 bg-white rounded-lg">
+          <DocumentTextIcon className="mx-auto h-12 w-12 text-gray-400" />
           <h3 className="mt-2 text-sm font-medium text-gray-900">No reports yet</h3>
           <p className="mt-1 text-sm text-gray-500">
             Reports will appear here after you run crawls.
           </p>
         </div>
       ) : (
-        <div className="bg-white shadow overflow-hidden sm:rounded-md">
-          <ul className="divide-y divide-gray-200">
-            {reports.map((report) => (
-              <li key={report.filename}>
-                <div className="px-4 py-4 sm:px-6 hover:bg-gray-50 flex items-center justify-between">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center space-x-3">
-                      <span className="text-2xl">📊</span>
-                      <div>
-                        <p className="text-sm font-medium text-gray-900 truncate">
+        <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+          {/* Desktop Table */}
+          <div className="hidden md:block overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Name
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Size
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Created
+                  </th>
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {reports.map((report) => (
+                  <tr key={report.filename} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center">
+                        <DocumentTextIcon className="w-5 h-5 text-gray-400 mr-3" />
+                        <p className="text-sm font-medium text-gray-900">
                           {report.filename}
                         </p>
-                        <div className="mt-1 flex items-center space-x-4 text-sm text-gray-500">
-                          <span>📦 {formatFileSize(report.size)}</span>
-                          <span>🕐 {formatDate(report.created_at)}</span>
-                        </div>
                       </div>
-                    </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <div className="flex items-center">
+                        <FolderIcon className="w-4 h-4 mr-1" />
+                        {formatFileSize(report.size)}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <div className="flex items-center">
+                        <ClockIcon className="w-4 h-4 mr-1" />
+                        {formatDate(report.created_at)}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                      <a
+                        href={apiClient.getReportDownloadUrl(report.filename)}
+                        download
+                        className="inline-flex items-center text-gray-600 hover:text-gray-900"
+                      >
+                        <ArrowDownTrayIcon className="w-5 h-5" />
+                      </a>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Mobile Cards */}
+          <div className="md:hidden divide-y divide-gray-200">
+            {reports.map((report) => (
+              <div key={report.filename} className="p-4 hover:bg-gray-50">
+                <div className="flex items-start justify-between mb-2">
+                  <div className="flex items-center flex-1 min-w-0">
+                    <DocumentTextIcon className="w-5 h-5 text-gray-400 mr-3 flex-shrink-0" />
+                    <p className="text-sm font-medium text-gray-900 break-all">
+                      {report.filename}
+                    </p>
                   </div>
                   <a
                     href={apiClient.getReportDownloadUrl(report.filename)}
                     download
-                    className="ml-4 flex-shrink-0 inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
+                    className="ml-2 flex-shrink-0 text-gray-600 hover:text-gray-900"
                   >
-                    <span className="mr-2">⬇</span>
-                    Download
+                    <ArrowDownTrayIcon className="w-5 h-5" />
                   </a>
                 </div>
-              </li>
+                <div className="flex flex-wrap items-center gap-3 text-sm text-gray-500 ml-8">
+                  <span className="flex items-center">
+                    <FolderIcon className="w-4 h-4 mr-1" />
+                    {formatFileSize(report.size)}
+                  </span>
+                  <span className="flex items-center">
+                    <ClockIcon className="w-4 h-4 mr-1" />
+                    {formatDate(report.created_at)}
+                  </span>
+                </div>
+              </div>
             ))}
-          </ul>
+          </div>
         </div>
       )}
     </div>
