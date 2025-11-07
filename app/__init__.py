@@ -28,7 +28,10 @@ def verify_password(username, password):
 
 def create_app(config=None):
     """Create and configure Flask application"""
-    app = Flask(__name__, static_folder="../frontend/dist", static_url_path="")
+    # Use absolute path for static folder to work correctly in Docker
+    base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    static_folder = os.path.join(base_dir, "frontend", "dist")
+    app = Flask(__name__, static_folder=static_folder, static_url_path="")
 
     # Apply config
     if config:
@@ -65,8 +68,19 @@ def create_app(config=None):
     @app.route("/<path:path>")
     def serve_frontend(path):
         """Serve React frontend or fallback to index.html"""
-        if path and os.path.exists(os.path.join(app.static_folder, path)):
-            return send_from_directory(app.static_folder, path)
+        # Don't serve frontend for API routes - let Flask return 404
+        if path.startswith("api/"):
+            from flask import abort
+
+            abort(404)
+
+        # Check if requested path exists as static file
+        if path:
+            static_path = os.path.join(app.static_folder, path)
+            if os.path.exists(static_path) and os.path.isfile(static_path):
+                return send_from_directory(app.static_folder, path)
+
+        # Fallback to index.html for SPA routing
         return send_from_directory(app.static_folder, "index.html")
 
     return app
