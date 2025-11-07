@@ -84,9 +84,9 @@ export default function Configs() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
         <div>
-          <h2 className="text-2xl sm:text-3xl font-bold text-gray-900">Website Checks</h2>
+          <h2 className="text-2xl sm:text-3xl font-bold text-gray-900">Configurations</h2>
           <p className="mt-1 text-sm text-gray-500">
-            Manage and run your website checks
+            Manage and run your configurations
           </p>
         </div>
         <div className="flex items-center space-x-3">
@@ -95,7 +95,7 @@ export default function Configs() {
             variant="primary"
             icon={<PlusIcon className="w-4 h-4" />}
           >
-            <span className="hidden sm:inline">New Check</span>
+            <span className="hidden sm:inline">New Configuration</span>
             <span className="sm:hidden">New</span>
           </Button>
         </div>

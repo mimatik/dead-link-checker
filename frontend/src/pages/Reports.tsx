@@ -7,7 +7,8 @@ import {
   ArrowDownTrayIcon,
   ClockIcon,
   FolderIcon,
-  EyeIcon,
+  DocumentMagnifyingGlassIcon,
+  TrashIcon,
 } from '@heroicons/react/24/outline';
 
 export default function Reports() {
@@ -29,6 +30,19 @@ export default function Reports() {
       setError(err instanceof Error ? err.message : 'Failed to load reports');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDeleteReport = async (filename: string) => {
+    if (!confirm(`Opravdu chcete smazat report "${filename}"?`)) {
+      return;
+    }
+
+    try {
+      await apiClient.deleteReport(filename);
+      await loadReports(); // Refresh reports list
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to delete report');
     }
   };
 
@@ -150,7 +164,7 @@ export default function Reports() {
                       variant="icon"
                       title="View Report"
                     >
-                      <EyeIcon className="w-5 h-5" />
+                      <DocumentMagnifyingGlassIcon className="w-5 h-5" />
                     </Button>
                     <Button
                       href={apiClient.getReportDownloadUrl(report.filename)}
@@ -159,6 +173,13 @@ export default function Reports() {
                       title="Download Report"
                     >
                       <ArrowDownTrayIcon className="w-5 h-5" />
+                    </Button>
+                    <Button
+                      onClick={() => handleDeleteReport(report.filename)}
+                      variant="icon"
+                      title="Delete Report"
+                    >
+                      <TrashIcon className="w-5 h-5" />
                     </Button>
                   </div>
                 </div>

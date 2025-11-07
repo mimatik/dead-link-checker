@@ -213,6 +213,39 @@ def download_report(filename: str):
         return jsonify({"error": str(e)}), 500
 
 
+@api_bp.route("/reports/<filename>", methods=["DELETE"])
+def delete_report(filename: str):
+    """Delete a report file and update jobs.json"""
+    try:
+        filepath = os.path.join(REPORTS_DIR, filename)
+
+        # Security: prevent directory traversal
+        if not os.path.abspath(filepath).startswith(os.path.abspath(REPORTS_DIR)):
+            return jsonify({"error": "Invalid filename"}), 400
+
+        if not os.path.exists(filepath):
+            return jsonify({"error": f"Report '{filename}' not found"}), 404
+
+        # Delete the file
+        os.remove(filepath)
+
+        # Update jobs.json - remove report_path from jobs that reference this file
+        all_jobs = jobs.list_jobs(limit=10000)  # Get all jobs
+        updated = False
+        for job in all_jobs:
+            if job.get("report_path") == filename:
+                jobs.update_job(job["id"], {"report_path": None})
+                updated = True
+
+        message = f"Report '{filename}' deleted"
+        if updated:
+            message += " and updated in jobs"
+
+        return jsonify({"message": message}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
 @api_bp.route("/reports/<filename>/data", methods=["GET"])
 def get_report_data(filename: str):
     """Get report data as JSON"""
@@ -276,11 +309,25 @@ def _extract_status_code(error_type: str) -> Optional[int]:
 def _find_config_id_by_report(filename: str) -> Optional[str]:
     """Find config_id by searching jobs for matching report filename"""
     all_jobs = jobs.list_jobs(limit=1000)
+
+    # Normalize filename by removing _incomplete suffix for comparison
+    def normalize_filename(fn: str) -> str:
+        """Remove _incomplete suffix if present"""
+        if fn and fn.endswith("_incomplete.csv"):
+            return fn.replace("_incomplete.csv", ".csv")
+        return fn
+
+    normalized_filename = normalize_filename(filename)
+
     for job in all_jobs:
-        if job.get("report_path") == filename:
-            config_id = job.get("config_id")
-            if config_id:
-                return config_id
+        job_report_path = job.get("report_path")
+        if job_report_path:
+            # Compare normalized filenames (with or without _incomplete)
+            normalized_job_path = normalize_filename(job_report_path)
+            if normalized_job_path == normalized_filename:
+                config_id = job.get("config_id")
+                if config_id:
+                    return config_id
     return None
 
 

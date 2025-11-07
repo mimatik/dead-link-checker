@@ -12,7 +12,7 @@ import {
   LinkIcon,
   ExclamationTriangleIcon,
   ClockIcon,
-  EyeIcon,
+  DocumentMagnifyingGlassIcon,
 } from '@heroicons/react/24/outline';
 
 export default function Dashboard() {
@@ -41,10 +41,6 @@ export default function Dashboard() {
   };
 
   const handleCancelJob = async (jobId: string) => {
-    if (!confirm('Opravdu chcete zrušit tento crawl job?')) {
-      return;
-    }
-
     try {
       await apiClient.cancelJob(jobId);
       await loadJobs(); // Refresh jobs list
@@ -250,7 +246,7 @@ export default function Dashboard() {
                           variant="icon"
                           title="View Report"
                         >
-                          <EyeIcon className="w-5 h-5" />
+                          <DocumentMagnifyingGlassIcon className="w-5 h-5" />
                         </Button>
                         <Button
                           href={apiClient.getReportDownloadUrl(

@@ -172,6 +172,12 @@ class ApiClient {
       }
     );
   }
+
+  async deleteReport(filename: string): Promise<{ message: string }> {
+    return this.request<{ message: string }>(`/reports/${filename}`, {
+      method: 'DELETE',
+    });
+  }
 }
 
 export const apiClient = new ApiClient(API_BASE_URL);

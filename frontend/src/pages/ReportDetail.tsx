@@ -7,6 +7,7 @@ import {
   ArrowLeftIcon,
   LinkIcon,
   ChartBarIcon,
+  TrashIcon,
 } from '@heroicons/react/24/outline';
 import Button from '../components/Button';
 
@@ -54,6 +55,21 @@ export default function ReportDetail() {
       alert(err instanceof Error ? err.message : 'Failed to mark link as resolved');
     } finally {
       setResolving(null);
+    }
+  };
+
+  const handleDeleteReport = async () => {
+    if (!filename) return;
+
+    if (!confirm(`Opravdu chcete smazat report "${filename}"?`)) {
+      return;
+    }
+
+    try {
+      await apiClient.deleteReport(filename);
+      navigate('/reports'); // Navigate back to reports list
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Failed to delete report');
     }
   };
 
@@ -121,6 +137,14 @@ export default function ReportDetail() {
             <ArrowDownTrayIcon className="w-4 h-4 mr-2" />
             Download CSV
           </a>
+          <Button
+            onClick={handleDeleteReport}
+            variant="secondary"
+            icon={<TrashIcon className="w-4 h-4 text-red-600" />}
+            className="text-red-600 hover:text-red-700 border-red-300 hover:border-red-400"
+          >
+            Delete Report
+          </Button>
         </div>
       </div>
 

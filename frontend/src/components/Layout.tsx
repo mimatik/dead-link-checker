@@ -16,7 +16,7 @@ export default function Layout() {
 
   const navItems = [
     { path: '/', label: 'Dashboard', icon: HomeIcon },
-    { path: '/configs', label: 'Website Checks', icon: DocumentTextIcon },
+    { path: '/configs', label: 'Configurations', icon: DocumentTextIcon },
     { path: '/reports', label: 'Reports', icon: ChartBarIcon },
   ];
 

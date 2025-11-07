@@ -25,6 +25,9 @@ else:
 # Files
 JOBS_FILE = os.path.join(DATA_DIR, "jobs.json")
 
+# Job management settings
+MAX_JOBS_TO_KEEP = int(os.environ.get("MAX_JOBS_TO_KEEP", "10"))
+
 # Ensure directories exist
 os.makedirs(CONFIG_DIR, exist_ok=True)
 os.makedirs(REPORTS_DIR, exist_ok=True)

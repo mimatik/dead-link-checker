@@ -368,13 +368,17 @@ class WebCrawler:
             },
         )
 
-    def save_report(self) -> Optional[str]:
+    def save_report(self, is_cancelled: bool = False) -> Optional[str]:
         """
         Save errors to CSV file
+
+        Args:
+            is_cancelled: Whether the crawl was cancelled (incomplete)
 
         Returns:
             Path to the report file, or None if no errors
         """
+        # Only save report if there are errors
         if not self.errors:
             return None
 
@@ -387,8 +391,11 @@ class WebCrawler:
         domain_name = (
             self.base_domain.replace("www.", "").replace(".", "_").replace("-", "_")
         )
+
+        # Add suffix to filename if crawl was cancelled
+        suffix = "_incomplete" if is_cancelled else ""
         filename = os.path.join(
-            output_dir, f"dead_links_report_{domain_name}_{timestamp}.csv"
+            output_dir, f"dead_links_report_{domain_name}_{timestamp}{suffix}.csv"
         )
 
         # Write CSV
@@ -404,6 +411,14 @@ class WebCrawler:
         return os.path.basename(filename)
 
 
+class CrawlCancelledException(Exception):
+    """Exception raised when crawl is cancelled, includes crawl results"""
+
+    def __init__(self, message, result=None):
+        super().__init__(message)
+        self.result = result
+
+
 def run_crawl(config: dict, progress_callback=None) -> dict:
     """
     Run a crawl with the given configuration
@@ -414,18 +429,46 @@ def run_crawl(config: dict, progress_callback=None) -> dict:
 
     Returns:
         Dictionary with crawl results including report_path
+
+    Raises:
+        CrawlCancelledException: If crawl was cancelled (contains result with report_path)
     """
     start_url = config.get("start_url")
     if not start_url:
         raise ValueError("start_url is required in config")
 
     crawler = WebCrawler(start_url, config, progress_callback)
-    crawler.crawl()
-    report_path = crawler.save_report()
+    is_cancelled = False
+    exception_to_raise = None
 
-    return {
+    try:
+        crawler.crawl()
+    except Exception as e:
+        # Check if exception is due to cancellation
+        if "cancelled" in str(e).lower() or "Job cancelled" in str(e):
+            is_cancelled = True
+        # Store exception to re-raise after saving report
+        exception_to_raise = e
+
+    # Save report even if crawl was cancelled or interrupted
+    report_path = crawler.save_report(is_cancelled=is_cancelled)
+
+    # Prepare result
+    result = {
         "report_path": report_path,
         "pages_crawled": crawler.pages_crawled,
         "links_checked": crawler.links_checked,
         "errors_found": crawler.errors_found,
+        "is_cancelled": is_cancelled,
     }
+
+    # Re-raise exception if one occurred, but include result for cancelled crawls
+    if exception_to_raise:
+        if is_cancelled:
+            # For cancelled crawls, raise custom exception with result
+            raise CrawlCancelledException(str(exception_to_raise), result=result)
+        else:
+            # For other errors, raise original exception
+            raise exception_to_raise
+
+    return result

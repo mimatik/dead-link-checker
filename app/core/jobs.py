@@ -2,13 +2,16 @@
 
 import json
 import os
+import sys
 import threading
+import traceback
 import uuid
 from datetime import datetime
 from typing import Dict, List, Optional
 
 from app.core import crawler
-from app.core.config import JOBS_FILE
+from app.core.config import JOBS_FILE, MAX_JOBS_TO_KEEP
+from app.core.crawler import CrawlCancelledException
 
 jobs_lock = threading.Lock()
 active_jobs: Dict[str, Dict] = {}
@@ -40,6 +43,32 @@ def _save_jobs(jobs: Dict):
 
     with open(JOBS_FILE, "w", encoding="utf-8") as f:
         json.dump(jobs, f, indent=2, ensure_ascii=False)
+
+
+def _cleanup_old_jobs(jobs: Dict) -> Dict:
+    """
+    Remove old jobs, keeping only the most recent ones
+
+    Args:
+        jobs: Dictionary of all jobs
+
+    Returns:
+        Dictionary with only the most recent jobs
+    """
+    if len(jobs) <= MAX_JOBS_TO_KEEP:
+        return jobs
+
+    # Sort jobs by created_at (newest first)
+    sorted_jobs = sorted(
+        jobs.items(),
+        key=lambda x: x[1].get("created_at", ""),
+        reverse=True,
+    )
+
+    # Keep only the most recent jobs
+    kept_jobs = dict(sorted_jobs[:MAX_JOBS_TO_KEEP])
+
+    return kept_jobs
 
 
 def create_job(config: Dict, config_id: Optional[str] = None) -> str:
@@ -77,6 +106,9 @@ def create_job(config: Dict, config_id: Optional[str] = None) -> str:
 
         jobs[job_id] = job
         active_jobs[job_id] = job
+
+        # Cleanup old jobs before saving
+        jobs = _cleanup_old_jobs(jobs)
         _save_jobs(jobs)
 
     return job_id
@@ -147,7 +179,12 @@ def update_job(job_id: str, updates: Dict):
 
 def _run_job_thread(job_id: str):
     """Run crawl job in background thread"""
+    result = None
+    is_cancelled = False
+
     try:
+        print(f"Starting job {job_id}", file=sys.stderr)
+
         # Update status to running
         update_job(
             job_id,
@@ -160,9 +197,14 @@ def _run_job_thread(job_id: str):
         # Get job config
         job = get_job(job_id)
         if not job:
+            print(f"Job {job_id} not found, exiting", file=sys.stderr)
             return
 
         config = job["config"]
+        print(
+            f"Job {job_id} config loaded, start_url: {config.get('start_url')}",
+            file=sys.stderr,
+        )
 
         # Progress callback to update job stats in real-time
         def progress_callback(event_type: str, data: dict):
@@ -184,33 +226,133 @@ def _run_job_thread(job_id: str):
                 )
 
         # Run crawl
+        print(f"Job {job_id} starting crawl...", file=sys.stderr)
         result = crawler.run_crawl(config, progress_callback)
+        print(f"Job {job_id} crawl completed, result: {result}", file=sys.stderr)
 
-        # Update job as completed
-        update_job(
-            job_id,
-            {
-                "status": "completed",
-                "completed_at": datetime.now().isoformat(),
-                "report_path": result.get("report_path"),
-                "stats": {
-                    "pages_crawled": result.get("pages_crawled", 0),
-                    "links_checked": result.get("links_checked", 0),
-                    "errors_found": result.get("errors_found", 0),
+        # Check if crawl was cancelled
+        is_cancelled = result.get("is_cancelled", False)
+
+        # Update job as completed or cancelled
+        if is_cancelled:
+            update_job(
+                job_id,
+                {
+                    "status": "cancelled",
+                    "completed_at": datetime.now().isoformat(),
+                    "report_path": result.get("report_path"),
+                    "stats": {
+                        "pages_crawled": result.get("pages_crawled", 0),
+                        "links_checked": result.get("links_checked", 0),
+                        "errors_found": result.get("errors_found", 0),
+                    },
                 },
-            },
-        )
+            )
+        else:
+            update_job(
+                job_id,
+                {
+                    "status": "completed",
+                    "completed_at": datetime.now().isoformat(),
+                    "report_path": result.get("report_path"),
+                    "stats": {
+                        "pages_crawled": result.get("pages_crawled", 0),
+                        "links_checked": result.get("links_checked", 0),
+                        "errors_found": result.get("errors_found", 0),
+                    },
+                },
+            )
 
+    except CrawlCancelledException as e:
+        # Crawl was cancelled, but we have result with report_path
+        is_cancelled = True
+        result = e.result
+        if result:
+            update_job(
+                job_id,
+                {
+                    "status": "cancelled",
+                    "completed_at": datetime.now().isoformat(),
+                    "report_path": result.get("report_path"),
+                    "stats": {
+                        "pages_crawled": result.get("pages_crawled", 0),
+                        "links_checked": result.get("links_checked", 0),
+                        "errors_found": result.get("errors_found", 0),
+                    },
+                },
+            )
+        else:
+            # Fallback if result is None
+            job = get_job(job_id)
+            if job:
+                stats = job.get("stats", {})
+                update_job(
+                    job_id,
+                    {
+                        "status": "cancelled",
+                        "completed_at": datetime.now().isoformat(),
+                        "report_path": None,
+                        "stats": stats,
+                    },
+                )
     except Exception as e:
-        # Update job as failed
-        update_job(
-            job_id,
-            {
-                "status": "failed",
-                "completed_at": datetime.now().isoformat(),
-                "error": str(e),
-            },
-        )
+        # Log the exception for debugging
+        error_msg = str(e)
+        print(f"ERROR in job {job_id}: {error_msg}", file=sys.stderr)
+        traceback.print_exc(file=sys.stderr)
+
+        # Check if exception is due to cancellation (legacy check)
+        if "cancelled" in error_msg.lower() or "Job cancelled" in error_msg:
+            is_cancelled = True
+            # If we have result from run_crawl, use it (report should be saved)
+            if result:
+                update_job(
+                    job_id,
+                    {
+                        "status": "cancelled",
+                        "completed_at": datetime.now().isoformat(),
+                        "report_path": result.get("report_path"),
+                        "stats": {
+                            "pages_crawled": result.get("pages_crawled", 0),
+                            "links_checked": result.get("links_checked", 0),
+                            "errors_found": result.get("errors_found", 0),
+                        },
+                    },
+                )
+            else:
+                # If no result, update job as cancelled without report
+                job = get_job(job_id)
+                if job:
+                    stats = job.get("stats", {})
+                    update_job(
+                        job_id,
+                        {
+                            "status": "cancelled",
+                            "completed_at": datetime.now().isoformat(),
+                            "report_path": None,
+                            "stats": stats,
+                        },
+                    )
+                else:
+                    # Update job as cancelled even if we don't have job data
+                    update_job(
+                        job_id,
+                        {
+                            "status": "cancelled",
+                            "completed_at": datetime.now().isoformat(),
+                            "error": error_msg,
+                        },
+                    )
+        else:
+            # Update job as failed for other errors
+            update_job(
+                job_id,
+                {
+                    "status": "failed",
+                    "completed_at": datetime.now().isoformat(),
+                    "error": error_msg,
+                },
+            )
 
     finally:
         # Remove from active jobs
