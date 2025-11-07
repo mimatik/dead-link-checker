@@ -2,6 +2,7 @@
 
 import csv
 import os
+import sys
 import time
 from collections import deque
 from datetime import datetime
@@ -376,39 +377,64 @@ class WebCrawler:
             is_cancelled: Whether the crawl was cancelled (incomplete)
 
         Returns:
-            Path to the report file, or None if no errors
+            Path to the report file, or None if no errors or if save failed
         """
         # Only save report if there are errors
         if not self.errors:
             return None
 
-        # Use centralized reports directory (handles Railway vs local paths)
-        output_dir = self.config.get("output_dir", REPORTS_DIR)
-        os.makedirs(output_dir, exist_ok=True)
+        try:
+            # Use centralized reports directory (handles Railway vs local paths)
+            output_dir = self.config.get("output_dir", REPORTS_DIR)
 
-        # Generate filename with domain and timestamp
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        domain_name = (
-            self.base_domain.replace("www.", "").replace(".", "_").replace("-", "_")
-        )
+            # Ensure directory exists - create with proper permissions
+            try:
+                os.makedirs(output_dir, exist_ok=True, mode=0o755)
+            except OSError as e:
+                # Log error but continue - directory might already exist
+                print(
+                    f"Warning: Could not create reports directory {output_dir}: {e}",
+                    file=sys.stderr,
+                )
 
-        # Add suffix to filename if crawl was cancelled
-        suffix = "_incomplete" if is_cancelled else ""
-        filename = os.path.join(
-            output_dir, f"dead_links_report_{domain_name}_{timestamp}{suffix}.csv"
-        )
+            # Generate filename with domain and timestamp
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            domain_name = (
+                self.base_domain.replace("www.", "").replace(".", "_").replace("-", "_")
+            )
 
-        # Write CSV
-        with open(filename, "w", newline="", encoding="utf-8") as csvfile:
-            fieldnames = ["error_type", "link_url", "link_text", "source_page"]
-            writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+            # Add suffix to filename if crawl was cancelled
+            suffix = "_incomplete" if is_cancelled else ""
+            filename = os.path.join(
+                output_dir, f"dead_links_report_{domain_name}_{timestamp}{suffix}.csv"
+            )
 
-            writer.writeheader()
-            for error in self.errors:
-                writer.writerow(error)
+            # Write CSV with error handling
+            try:
+                with open(filename, "w", newline="", encoding="utf-8") as csvfile:
+                    fieldnames = ["error_type", "link_url", "link_text", "source_page"]
+                    writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
 
-        # Return only the filename (not full path) for consistent API response
-        return os.path.basename(filename)
+                    writer.writeheader()
+                    for error in self.errors:
+                        writer.writerow(error)
+
+                # Return only the filename (not full path) for consistent API response
+                return os.path.basename(filename)
+            except (IOError, OSError) as e:
+                # Log error but don't crash - report save failed
+                print(
+                    f"Error: Could not write report file {filename}: {e}",
+                    file=sys.stderr,
+                )
+                return None
+        except Exception as e:
+            # Catch any other unexpected errors
+            print(f"Error: Unexpected error saving report: {e}", file=sys.stderr)
+            import traceback
+
+            traceback.print_exc(file=sys.stderr)
+            return None
 
 
 class CrawlCancelledException(Exception):
