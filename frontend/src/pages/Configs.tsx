@@ -159,7 +159,7 @@ export default function Configs() {
                 >
                   Run
                 </Button>
-                <div className="flex space-x-3">
+                <div className="flex gap-2">
                   <Button
                     onClick={() => handleEdit(config)}
                     variant="icon"

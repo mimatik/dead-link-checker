@@ -1,13 +1,17 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { apiClient, type Report } from '../api/client';
+import Button from '../components/Button';
 import {
   DocumentTextIcon,
   ArrowDownTrayIcon,
   ClockIcon,
   FolderIcon,
+  EyeIcon,
 } from '@heroicons/react/24/outline';
 
 export default function Reports() {
+  const navigate = useNavigate();
   const [reports, setReports] = useState<Report[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -78,93 +82,87 @@ export default function Reports() {
         </div>
       ) : (
         <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-          {/* Desktop Table */}
-          <div className="hidden md:block overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Name
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Size
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Created
-                  </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {reports.map((report) => (
-                  <tr key={report.filename} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center">
-                        <DocumentTextIcon className="w-5 h-5 text-gray-400 mr-3" />
-                        <p className="text-sm font-medium text-gray-900">
-                          {report.filename}
-                        </p>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      <div className="flex items-center">
-                        <FolderIcon className="w-4 h-4 mr-1" />
-                        {formatFileSize(report.size)}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      <div className="flex items-center">
-                        <ClockIcon className="w-4 h-4 mr-1" />
-                        {formatDate(report.created_at)}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                      <a
-                        href={apiClient.getReportDownloadUrl(report.filename)}
-                        download
-                        className="inline-flex items-center text-gray-600 hover:text-gray-900"
-                      >
-                        <ArrowDownTrayIcon className="w-5 h-5" />
-                      </a>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <div className="reports-grid">
+            {/* Header - hidden on mobile */}
+            <div className="hidden md:contents">
+              <div className="p-4 bg-gray-50 text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">
+                Name
+              </div>
+              <div className="p-4 bg-gray-50 text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">
+                Size
+              </div>
+              <div className="p-4 bg-gray-50 text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">
+                Created
+              </div>
+              <div className="p-4 bg-gray-50 text-xs font-medium text-gray-500 uppercase tracking-wider text-right border-b border-gray-200">
+                Actions
+              </div>
+            </div>
 
-          {/* Mobile Cards */}
-          <div className="md:hidden divide-y divide-gray-200">
-            {reports.map((report) => (
-              <div key={report.filename} className="p-4 hover:bg-gray-50">
-                <div className="flex items-start justify-between mb-2">
-                  <div className="flex items-center flex-1 min-w-0">
-                    <DocumentTextIcon className="w-5 h-5 text-gray-400 mr-3 flex-shrink-0" />
-                    <p className="text-sm font-medium text-gray-900 break-all">
-                      {report.filename}
-                    </p>
-                  </div>
-                  <a
-                    href={apiClient.getReportDownloadUrl(report.filename)}
-                    download
-                    className="ml-2 flex-shrink-0 text-gray-600 hover:text-gray-900"
-                  >
-                    <ArrowDownTrayIcon className="w-5 h-5" />
-                  </a>
+            {/* Reports */}
+            {reports.map((report, reportIndex) => (
+              <>
+                {/* Name */}
+                <div
+                  key={`${report.filename}-name`}
+                  className={`flex items-center p-2 md:p-4 cursor-pointer ${reportIndex > 0 ? 'md:border-t border-t border-gray-200' : ''}`}
+                  onClick={() => navigate(`/reports/${report.filename}`)}
+                >
+                  <DocumentTextIcon className="w-5 h-5 text-gray-400 mr-3 flex-shrink-0" />
+                  <p className="text-sm font-medium text-gray-900 break-all md:truncate">
+                    {report.filename}
+                  </p>
                 </div>
-                <div className="flex flex-wrap items-center gap-3 text-sm text-gray-500 ml-8">
-                  <span className="flex items-center">
+
+                {/* Size */}
+                <div
+                  key={`${report.filename}-size`}
+                  className="flex flex-col md:flex-row md:items-center min-w-0 p-2 md:p-4 md:border-t border-t-0 border-gray-200"
+                >
+                  <span className="md:hidden text-xs text-gray-500 mb-1">Size:</span>
+                  <div className="flex items-center text-sm text-gray-500">
                     <FolderIcon className="w-4 h-4 mr-1" />
                     {formatFileSize(report.size)}
-                  </span>
-                  <span className="flex items-center">
+                  </div>
+                </div>
+
+                {/* Created */}
+                <div
+                  key={`${report.filename}-created`}
+                  className="flex flex-col md:flex-row md:items-center min-w-0 p-2 md:p-4 md:border-t border-t-0 border-gray-200"
+                >
+                  <span className="md:hidden text-xs text-gray-500 mb-1">Created:</span>
+                  <div className="flex items-center text-sm text-gray-500">
                     <ClockIcon className="w-4 h-4 mr-1" />
                     {formatDate(report.created_at)}
-                  </span>
+                  </div>
                 </div>
-              </div>
+
+                {/* Actions */}
+                <div
+                  key={`${report.filename}-actions`}
+                  className="flex items-center justify-start md:justify-end p-2 md:p-4 md:border-t border-t-0 border-gray-200"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <div className="flex items-center gap-2">
+                    <Button
+                      onClick={() => navigate(`/reports/${report.filename}`)}
+                      variant="icon"
+                      title="View Report"
+                    >
+                      <EyeIcon className="w-5 h-5" />
+                    </Button>
+                    <Button
+                      href={apiClient.getReportDownloadUrl(report.filename)}
+                      variant="icon"
+                      download
+                      title="Download Report"
+                    >
+                      <ArrowDownTrayIcon className="w-5 h-5" />
+                    </Button>
+                  </div>
+                </div>
+              </>
             ))}
           </div>
         </div>

@@ -1,6 +1,9 @@
 """Flask API routes for dead link crawler"""
 
+import csv
 import os
+from typing import Optional
+from urllib.parse import urlparse
 
 from flask import Blueprint, jsonify, request, send_file
 
@@ -206,5 +209,167 @@ def download_report(filename: str):
             return jsonify({"error": f"Report '{filename}' not found"}), 404
 
         return send_file(filepath, as_attachment=True, download_name=filename)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@api_bp.route("/reports/<filename>/data", methods=["GET"])
+def get_report_data(filename: str):
+    """Get report data as JSON"""
+    try:
+        filepath = os.path.join(REPORTS_DIR, filename)
+
+        # Security: prevent directory traversal
+        if not os.path.abspath(filepath).startswith(os.path.abspath(REPORTS_DIR)):
+            return jsonify({"error": "Invalid filename"}), 400
+
+        if not os.path.exists(filepath):
+            return jsonify({"error": f"Report '{filename}' not found"}), 404
+
+        # Read CSV and convert to JSON
+        entries = []
+        with open(filepath, "r", encoding="utf-8") as csvfile:
+            reader = csv.DictReader(csvfile)
+            for row in reader:
+                entries.append(
+                    {
+                        "error_type": row.get("error_type", ""),
+                        "link_url": row.get("link_url", ""),
+                        "link_text": row.get("link_text", ""),
+                        "source_page": row.get("source_page", ""),
+                        "resolved": False,  # Will be updated when marking as resolved
+                    }
+                )
+
+        # Calculate stats
+        total_entries = len(entries)
+        error_types = {}
+        for entry in entries:
+            error_type = entry["error_type"]
+            error_types[error_type] = error_types.get(error_type, 0) + 1
+
+        return jsonify(
+            {
+                "filename": filename,
+                "entries": entries,
+                "stats": {
+                    "total": total_entries,
+                    "resolved": 0,  # Will be tracked separately
+                    "error_types": error_types,
+                },
+            }
+        ), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+def _extract_status_code(error_type: str) -> Optional[int]:
+    """Extract HTTP status code from error_type string"""
+    if error_type and error_type.startswith("HTTP "):
+        try:
+            return int(error_type.split()[1])
+        except (ValueError, IndexError):
+            pass
+    return None
+
+
+def _find_config_id_by_report(filename: str) -> Optional[str]:
+    """Find config_id by searching jobs for matching report filename"""
+    all_jobs = jobs.list_jobs(limit=1000)
+    for job in all_jobs:
+        if job.get("report_path") == filename:
+            config_id = job.get("config_id")
+            if config_id:
+                return config_id
+    return None
+
+
+def _find_config_id_by_domain(domain: str) -> Optional[str]:
+    """Find config_id by matching domain with config start_url"""
+    all_configs = config_store.list_configs()
+    for config in all_configs:
+        config_start_url = config.get("start_url", "")
+        config_domain = urlparse(config_start_url).netloc.replace("www.", "")
+        if config_domain == domain:
+            return config.get("id")
+    return None
+
+
+@api_bp.route("/reports/<filename>/mark-resolved", methods=["POST"])
+def mark_link_resolved(filename: str):
+    """Mark a link as resolved and add domain rule to config"""
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({"error": "Request body is required"}), 400
+
+        link_url = data.get("link_url")
+        error_type = data.get("error_type")
+        config_id = data.get("config_id")
+
+        if not link_url:
+            return jsonify({"error": "link_url is required"}), 400
+
+        # Extract domain from link_url
+        parsed_url = urlparse(link_url)
+        domain = parsed_url.netloc.replace("www.", "")
+
+        if not domain:
+            return jsonify({"error": "Invalid URL"}), 400
+
+        # Extract HTTP status code from error_type
+        status_code = _extract_status_code(error_type)
+        if not status_code:
+            error_msg = "Could not extract status code from error_type"
+            return jsonify({"error": error_msg}), 400
+
+        # Find config_id if not provided
+        if not config_id:
+            config_id = _find_config_id_by_report(filename)
+        if not config_id:
+            config_id = _find_config_id_by_domain(domain)
+
+        if not config_id:
+            error_msg = (
+                "Could not determine config_id. Please provide config_id in request."
+            )
+            return jsonify({"error": error_msg}), 400
+
+        # Get config
+        try:
+            config = config_store.get_config(config_id)
+        except FileNotFoundError:
+            return jsonify({"error": f"Configuration '{config_id}' not found"}), 404
+
+        # Add or update domain rule
+        if "domain_rules" not in config:
+            config["domain_rules"] = {}
+
+        if domain not in config["domain_rules"]:
+            config["domain_rules"][domain] = {
+                "allowed_codes": [],
+                "description": f"Manually resolved links for {domain}",
+            }
+
+        # Add status code to allowed_codes if not already present
+        if status_code not in config["domain_rules"][domain]["allowed_codes"]:
+            config["domain_rules"][domain]["allowed_codes"].append(status_code)
+            config["domain_rules"][domain]["allowed_codes"].sort()
+
+        # Update config
+        config_store.update_config(config_id, config)
+
+        message = (
+            f"Link marked as resolved. "
+            f"Added rule for {domain} with allowed code {status_code}."
+        )
+        return jsonify(
+            {
+                "message": message,
+                "config_id": config_id,
+                "domain": domain,
+                "status_code": status_code,
+            }
+        ), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500

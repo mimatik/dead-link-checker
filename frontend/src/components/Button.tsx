@@ -1,9 +1,9 @@
-import { type ReactNode } from 'react';
+import { type ReactNode, type MouseEvent } from 'react';
 import clsx from 'clsx';
 
 interface ButtonProps {
   children: ReactNode;
-  onClick?: () => void;
+  onClick?: (e?: MouseEvent) => void;
   type?: 'button' | 'submit' | 'reset';
   variant?: 'primary' | 'secondary' | 'danger' | 'icon';
   disabled?: boolean;
@@ -13,6 +13,8 @@ interface ButtonProps {
   fullWidth?: boolean;
   size?: 'sm' | 'md' | 'lg';
   title?: string;
+  href?: string;
+  download?: boolean;
 }
 
 export default function Button({
@@ -27,8 +29,10 @@ export default function Button({
   fullWidth = false,
   size = 'md',
   title,
+  href,
+  download,
 }: ButtonProps) {
-  const baseClasses = 'inline-flex items-center justify-center font-medium rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2';
+  const baseClasses = 'cursor-pointer inline-flex items-center justify-center font-medium rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2';
   
   const sizeClasses = {
     sm: 'px-3 py-1.5 text-xs',
@@ -40,12 +44,13 @@ export default function Button({
     primary: 'border border-transparent text-white bg-gray-900 hover:bg-gray-800 disabled:bg-gray-400 disabled:cursor-not-allowed focus:ring-gray-900',
     secondary: 'border border-gray-300 text-gray-700 bg-white hover:bg-gray-50 disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed focus:ring-gray-500',
     danger: 'border border-transparent text-white bg-red-600 hover:bg-red-700 disabled:bg-red-400 disabled:cursor-not-allowed focus:ring-red-500',
-    icon: 'border border-transparent text-gray-600 hover:text-gray-900 disabled:text-gray-400 disabled:cursor-not-allowed focus:ring-gray-500 p-2',
+    icon: 'border border-transparent text-gray-600 hover:text-gray-900 disabled:text-gray-400 disabled:cursor-not-allowed focus:ring-gray-500 p-1 m-0',
   };
 
   const classes = clsx(
     baseClasses,
-    sizeClasses[size],
+    // Don't apply sizeClasses for icon variant
+    variant !== 'icon' && sizeClasses[size],
     variantClasses[variant],
     {
       'w-full': fullWidth,
@@ -59,6 +64,29 @@ export default function Button({
     </span>
   );
 
+  const content = (
+    <>
+      {iconPosition === 'left' && iconElement}
+      {children}
+      {iconPosition === 'right' && iconElement}
+    </>
+  );
+
+  // Render as anchor if href is provided
+  if (href) {
+    return (
+      <a
+        href={href}
+        download={download}
+        onClick={onClick}
+        className={classes}
+        title={title}
+      >
+        {content}
+      </a>
+    );
+  }
+
   return (
     <button
       type={type}
@@ -67,9 +95,7 @@ export default function Button({
       className={classes}
       title={title}
     >
-      {iconPosition === 'left' && iconElement}
-      {children}
-      {iconPosition === 'right' && iconElement}
+      {content}
     </button>
   );
 }

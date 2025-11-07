@@ -42,6 +42,24 @@ export interface Report {
   created_at: number;
 }
 
+export interface ReportEntry {
+  error_type: string;
+  link_url: string;
+  link_text: string;
+  source_page: string;
+  resolved: boolean;
+}
+
+export interface ReportData {
+  filename: string;
+  entries: ReportEntry[];
+  stats: {
+    total: number;
+    resolved: number;
+    error_types: Record<string, number>;
+  };
+}
+
 class ApiClient {
   private baseUrl: string;
 
@@ -130,6 +148,29 @@ class ApiClient {
 
   getReportDownloadUrl(filename: string): string {
     return `${this.baseUrl}/reports/${filename}`;
+  }
+
+  async getReportData(filename: string): Promise<ReportData> {
+    return this.request<ReportData>(`/reports/${filename}/data`);
+  }
+
+  async markLinkResolved(
+    filename: string,
+    linkUrl: string,
+    errorType: string,
+    configId?: string
+  ): Promise<{ message: string; config_id: string; domain: string; status_code: number }> {
+    return this.request<{ message: string; config_id: string; domain: string; status_code: number }>(
+      `/reports/${filename}/mark-resolved`,
+      {
+        method: 'POST',
+        body: JSON.stringify({
+          link_url: linkUrl,
+          error_type: errorType,
+          config_id: configId,
+        }),
+      }
+    );
   }
 }
 

@@ -3,6 +3,7 @@ import Layout from './components/Layout';
 import Dashboard from './pages/Dashboard';
 import Configs from './pages/Configs';
 import Reports from './pages/Reports';
+import ReportDetail from './pages/ReportDetail';
 
 function App() {
   return (
@@ -12,6 +13,7 @@ function App() {
           <Route index element={<Dashboard />} />
           <Route path="configs" element={<Configs />} />
           <Route path="reports" element={<Reports />} />
+          <Route path="reports/:filename" element={<ReportDetail />} />
         </Route>
       </Routes>
     </BrowserRouter>

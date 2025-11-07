@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { apiClient, type Job } from '../api/client';
 import ConfigModal from '../components/ConfigModal';
 import Button from '../components/Button';
@@ -11,9 +12,11 @@ import {
   LinkIcon,
   ExclamationTriangleIcon,
   ClockIcon,
+  EyeIcon,
 } from '@heroicons/react/24/outline';
 
 export default function Dashboard() {
+  const navigate = useNavigate();
   const [jobs, setJobs] = useState<Job[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -155,124 +158,34 @@ export default function Dashboard() {
         </div>
       ) : (
         <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-          {/* Desktop Table */}
-          <div className="hidden md:block overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Status
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    URL
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Stats
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Created
-                  </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {jobs.map((job) => (
-                  <tr key={job.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span
-                        className={`px-2.5 py-1 inline-flex text-xs leading-5 font-semibold rounded-md ${getStatusColor(
-                          job.status
-                        )}`}
-                      >
-                        {job.status === 'running' ? (
-                          <span className="flex items-center">
-                            <span className="w-2 h-2 bg-current rounded-full mr-1.5 animate-pulse"></span>
-                            {job.status}
-                          </span>
-                        ) : (
-                          job.status
-                        )}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4">
-                      <p className="text-sm font-medium text-gray-900 truncate max-w-xs">
-                        {job.config.start_url}
-                      </p>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center space-x-4 text-sm text-gray-500">
-                        <span className="flex items-center">
-                          <DocumentTextIcon className="w-4 h-4 mr-1" />
-                          {job.stats.pages_crawled}
-                        </span>
-                        <span className="flex items-center">
-                          <LinkIcon className="w-4 h-4 mr-1" />
-                          {job.stats.links_checked}
-                        </span>
-                        {job.stats.errors_found > 0 && (
-                          <span className="flex items-center text-red-600">
-                            <ExclamationTriangleIcon className="w-4 h-4 mr-1" />
-                            {job.stats.errors_found}
-                          </span>
-                        )}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      <div className="flex items-center">
-                        <ClockIcon className="w-4 h-4 mr-1" />
-                        {formatDate(job.created_at)}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                      <div className="flex items-center justify-end space-x-3">
-                        {job.report_path && (
-                          <a
-                            href={apiClient.getReportDownloadUrl(
-                              job.report_path.split('/').pop() || ''
-                            )}
-                            className="text-gray-600 hover:text-gray-900"
-                            download
-                            title="Download Report"
-                          >
-                            <ArrowDownTrayIcon className="w-5 h-5" />
-                          </a>
-                        )}
-                        {(job.status === 'completed' || job.status === 'failed' || job.status === 'cancelled') && (
-                          <Button
-                            onClick={() => handleRerunJob(job)}
-                            variant="icon"
-                            title="Rerun"
-                          >
-                            <ArrowPathIcon className="w-5 h-5" />
-                          </Button>
-                        )}
-                        {(job.status === 'running' || job.status === 'queued') && (
-                          <Button
-                            onClick={() => handleCancelJob(job.id)}
-                            variant="danger"
-                            size="sm"
-                            icon={<XMarkIcon className="w-4 h-4" />}
-                          >
-                            Cancel
-                          </Button>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <div className="dashboard-jobs-grid">
+            {/* Header - hidden on mobile */}
+            <div className="hidden md:contents">
+              <div className="p-4 bg-gray-50 text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">
+                Status
+              </div>
+              <div className="p-4 bg-gray-50 text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">
+                URL
+              </div>
+              <div className="p-4 bg-gray-50 text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">
+                Stats
+              </div>
+              <div className="p-4 bg-gray-50 text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">
+                Created
+              </div>
+              <div className="p-4 bg-gray-50 text-xs font-medium text-gray-500 uppercase tracking-wider text-right border-b border-gray-200">
+                Actions
+              </div>
+            </div>
 
-          {/* Mobile Cards */}
-          <div className="md:hidden divide-y divide-gray-200">
-            {jobs.map((job) => (
-              <div key={job.id} className="p-4 hover:bg-gray-50">
-                <div className="flex items-start justify-between mb-3">
+            {/* Jobs */}
+            {jobs.map((job, jobIndex) => (
+              <>
+                {/* Status */}
+                <div key={`${job.id}-status`} className={`flex items-center p-2 md:p-4 ${jobIndex > 0 ? 'md:border-t border-t border-gray-200' : ''}`}>
+                  <span className="md:hidden text-xs text-gray-500 mr-2">Status:</span>
                   <span
-                    className={`px-2.5 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(
+                    className={`px-2.5 py-1 inline-flex text-xs leading-5 font-semibold rounded-md ${getStatusColor(
                       job.status
                     )}`}
                   >
@@ -285,18 +198,74 @@ export default function Dashboard() {
                       job.status
                     )}
                   </span>
-                  <div className="flex items-center space-x-2">
+                </div>
+
+                {/* URL */}
+                <div key={`${job.id}-url`} className="flex flex-col md:flex-row md:items-center min-w-0 p-2 md:p-4 md:border-t border-t-0 border-gray-200">
+                  <span className="md:hidden text-xs text-gray-500 mb-1">URL:</span>
+                  <p className="text-sm font-medium text-gray-900 break-all md:truncate">
+                    {job.config.start_url}
+                  </p>
+                </div>
+
+                {/* Stats */}
+                <div key={`${job.id}-stats`} className="flex flex-col md:flex-row md:items-center min-w-0 p-2 md:p-4 md:border-t border-t-0 border-gray-200">
+                  <span className="md:hidden text-xs text-gray-500 mb-1">Stats:</span>
+                  <div className="flex flex-wrap items-center gap-2 md:gap-4 text-sm text-gray-500">
+                    <span className="flex items-center">
+                      <DocumentTextIcon className="w-4 h-4 mr-1" />
+                      {job.stats.pages_crawled}
+                    </span>
+                    <span className="flex items-center">
+                      <LinkIcon className="w-4 h-4 mr-1" />
+                      {job.stats.links_checked}
+                    </span>
+                    {job.stats.errors_found > 0 && (
+                      <span className="flex items-center text-red-600">
+                        <ExclamationTriangleIcon className="w-4 h-4 mr-1" />
+                        {job.stats.errors_found}
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Created */}
+                <div key={`${job.id}-created`} className="flex flex-col md:flex-row md:items-center min-w-0 p-2 md:p-4 md:border-t border-t-0 border-gray-200">
+                  <span className="md:hidden text-xs text-gray-500 mb-1">Created:</span>
+                  <div className="flex items-center text-sm text-gray-500">
+                    <ClockIcon className="w-4 h-4 mr-1" />
+                    {formatDate(job.created_at)}
+                  </div>
+                </div>
+
+                {/* Actions */}
+                <div key={`${job.id}-actions`} className="flex items-center justify-start md:justify-end p-2 md:p-4 md:border-t border-t-0 border-gray-200">
+                  <div className="flex items-center gap-2">
                     {job.report_path && (
-                      <a
-                        href={apiClient.getReportDownloadUrl(
-                          job.report_path.split('/').pop() || ''
-                        )}
-                        className="text-gray-600 hover:text-gray-900"
-                        download
-                        title="Download Report"
-                      >
-                        <ArrowDownTrayIcon className="w-5 h-5" />
-                      </a>
+                      <>
+                        <Button
+                          onClick={() =>
+                            navigate(`/reports/${job.report_path?.split('/').pop() || ''}`)
+                          }
+                          variant="icon"
+                          title="View Report"
+                        >
+                          <EyeIcon className="w-5 h-5" />
+                        </Button>
+                        <Button
+                          href={apiClient.getReportDownloadUrl(
+                            job.report_path.split('/').pop() || ''
+                          )}
+                          variant="icon"
+                          download
+                          title="Download Report"
+                          onClick={(e) => {
+                            e?.stopPropagation();
+                          }}
+                        >
+                          <ArrowDownTrayIcon className="w-5 h-5" />
+                        </Button>
+                      </>
                     )}
                     {(job.status === 'completed' || job.status === 'failed' || job.status === 'cancelled') && (
                       <Button
@@ -319,30 +288,7 @@ export default function Dashboard() {
                     )}
                   </div>
                 </div>
-                <p className="text-sm font-medium text-gray-900 mb-2 break-all">
-                  {job.config.start_url}
-                </p>
-                <div className="flex flex-wrap items-center gap-3 text-sm text-gray-500 mb-2">
-                  <span className="flex items-center">
-                    <DocumentTextIcon className="w-4 h-4 mr-1" />
-                    {job.stats.pages_crawled} pages
-                  </span>
-                  <span className="flex items-center">
-                    <LinkIcon className="w-4 h-4 mr-1" />
-                    {job.stats.links_checked} links
-                  </span>
-                  {job.stats.errors_found > 0 && (
-                    <span className="flex items-center text-red-600">
-                      <ExclamationTriangleIcon className="w-4 h-4 mr-1" />
-                      {job.stats.errors_found} errors
-                    </span>
-                  )}
-                </div>
-                <div className="flex items-center text-sm text-gray-500">
-                  <ClockIcon className="w-4 h-4 mr-1" />
-                  {formatDate(job.created_at)}
-                </div>
-              </div>
+              </>
             ))}
           </div>
         </div>
