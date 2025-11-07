@@ -259,6 +259,9 @@ def get_report_data(filename: str):
         if not os.path.exists(filepath):
             return jsonify({"error": f"Report '{filename}' not found"}), 404
 
+        # Try to find config_id for this report
+        config_id = _find_config_id_by_report(filename)
+
         # Read CSV and convert to JSON
         entries = []
         with open(filepath, "r", encoding="utf-8") as csvfile:
@@ -285,6 +288,7 @@ def get_report_data(filename: str):
             {
                 "filename": filename,
                 "entries": entries,
+                "config_id": config_id,  # Include config_id if found
                 "stats": {
                     "total": total_entries,
                     "resolved": 0,  # Will be tracked separately
@@ -304,6 +308,12 @@ def _extract_status_code(error_type: str) -> Optional[int]:
         except (ValueError, IndexError):
             pass
     return None
+
+
+def _is_error_type_without_code(error_type: str) -> bool:
+    """Check if error_type is Timeout or Connection Error (no status code)"""
+    error_lower = error_type.lower()
+    return "timeout" in error_lower or "connection error" in error_lower
 
 
 def _find_config_id_by_report(filename: str) -> Optional[str]:
@@ -366,8 +376,14 @@ def mark_link_resolved(filename: str):
 
         # Extract HTTP status code from error_type
         status_code = _extract_status_code(error_type)
-        if not status_code:
-            error_msg = "Could not extract status code from error_type"
+        is_timeout_or_connection = _is_error_type_without_code(error_type)
+
+        # For Timeout and Connection Error, set ignore_timeouts flag
+        if not status_code and not is_timeout_or_connection:
+            error_msg = (
+                "Could not extract status code from error_type. "
+                "Only HTTP errors, Timeout, and Connection Error are supported."
+            )
             return jsonify({"error": error_msg}), 400
 
         # Find config_id if not provided
@@ -396,26 +412,135 @@ def mark_link_resolved(filename: str):
             config["domain_rules"][domain] = {
                 "allowed_codes": [],
                 "description": f"Manually resolved links for {domain}",
+                "ignore_timeouts": False,
             }
 
-        # Add status code to allowed_codes if not already present
-        if status_code not in config["domain_rules"][domain]["allowed_codes"]:
-            config["domain_rules"][domain]["allowed_codes"].append(status_code)
-            config["domain_rules"][domain]["allowed_codes"].sort()
+        # Handle Timeout/Connection Error - set ignore_timeouts flag
+        if is_timeout_or_connection:
+            config["domain_rules"][domain]["ignore_timeouts"] = True
+            message = (
+                f"Link marked as resolved. "
+                f"Added rule for {domain} to ignore timeouts and connection errors."
+            )
+        else:
+            # Add status code to allowed_codes if not already present
+            if status_code not in config["domain_rules"][domain]["allowed_codes"]:
+                config["domain_rules"][domain]["allowed_codes"].append(status_code)
+                config["domain_rules"][domain]["allowed_codes"].sort()
+            message = (
+                f"Link marked as resolved. "
+                f"Added rule for {domain} with allowed code {status_code}."
+            )
 
         # Update config
         config_store.update_config(config_id, config)
 
-        message = (
-            f"Link marked as resolved. "
-            f"Added rule for {domain} with allowed code {status_code}."
-        )
         return jsonify(
             {
                 "message": message,
                 "config_id": config_id,
                 "domain": domain,
                 "status_code": status_code,
+                "ignore_timeouts": is_timeout_or_connection,
+            }
+        ), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@api_bp.route("/reports/<filename>/remove-rule", methods=["POST"])
+def remove_domain_rule(filename: str):
+    """Remove a specific domain rule (status code or ignore_timeouts) from config"""
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({"error": "Request body is required"}), 400
+
+        link_url = data.get("link_url")
+        error_type = data.get("error_type")
+        config_id = data.get("config_id")
+
+        if not link_url:
+            return jsonify({"error": "link_url is required"}), 400
+
+        # Extract domain from link_url
+        parsed_url = urlparse(link_url)
+        domain = parsed_url.netloc.replace("www.", "")
+
+        if not domain:
+            return jsonify({"error": "Invalid URL"}), 400
+
+        # Extract HTTP status code from error_type
+        status_code = _extract_status_code(error_type)
+        is_timeout_or_connection = _is_error_type_without_code(error_type)
+
+        # Find config_id if not provided
+        if not config_id:
+            config_id = _find_config_id_by_report(filename)
+        if not config_id:
+            config_id = _find_config_id_by_domain(domain)
+
+        if not config_id:
+            error_msg = (
+                "Could not determine config_id. Please provide config_id in request."
+            )
+            return jsonify({"error": error_msg}), 400
+
+        # Get config
+        try:
+            config = config_store.get_config(config_id)
+        except FileNotFoundError:
+            return jsonify({"error": f"Configuration '{config_id}' not found"}), 404
+
+        # Check if domain_rules exist
+        if "domain_rules" not in config or domain not in config["domain_rules"]:
+            return jsonify({"error": f"No rule found for domain '{domain}'"}), 404
+
+        domain_rule = config["domain_rules"][domain]
+
+        # Handle Timeout/Connection Error - remove ignore_timeouts flag
+        if is_timeout_or_connection:
+            if domain_rule.get("ignore_timeouts", False):
+                domain_rule["ignore_timeouts"] = False
+                message = f"Removed ignore_timeouts rule for {domain}."
+            else:
+                error_msg = f"No ignore_timeouts rule found for domain '{domain}'"
+                return jsonify({"error": error_msg}), 404
+        elif status_code:
+            # Remove specific status code from allowed_codes
+            if (
+                "allowed_codes" in domain_rule
+                and status_code in domain_rule["allowed_codes"]
+            ):
+                domain_rule["allowed_codes"].remove(status_code)
+                message = f"Removed allowed code {status_code} for domain {domain}."
+            else:
+                error_msg = (
+                    f"Status code {status_code} not found in rules "
+                    f"for domain '{domain}'"
+                )
+                return jsonify({"error": error_msg}), 404
+        else:
+            error_msg = "Could not determine what to remove from error_type"
+            return jsonify({"error": error_msg}), 400
+
+        # If domain_rule is now empty, remove it
+        if not domain_rule.get("allowed_codes", []) and not domain_rule.get(
+            "ignore_timeouts", False
+        ):
+            del config["domain_rules"][domain]
+            message += f" Domain rule for {domain} removed completely."
+
+        # Update config
+        config_store.update_config(config_id, config)
+
+        return jsonify(
+            {
+                "message": message,
+                "config_id": config_id,
+                "domain": domain,
+                "status_code": status_code if status_code else None,
+                "ignore_timeouts": is_timeout_or_connection,
             }
         ), 200
     except Exception as e:

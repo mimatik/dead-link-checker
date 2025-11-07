@@ -53,6 +53,7 @@ export interface ReportEntry {
 export interface ReportData {
   filename: string;
   entries: ReportEntry[];
+  config_id?: string | null;
   stats: {
     total: number;
     resolved: number;
@@ -159,9 +160,28 @@ class ApiClient {
     linkUrl: string,
     errorType: string,
     configId?: string
-  ): Promise<{ message: string; config_id: string; domain: string; status_code: number }> {
-    return this.request<{ message: string; config_id: string; domain: string; status_code: number }>(
+  ): Promise<{ message: string; config_id: string; domain: string; status_code: number | null; ignore_timeouts: boolean }> {
+    return this.request<{ message: string; config_id: string; domain: string; status_code: number | null; ignore_timeouts: boolean }>(
       `/reports/${filename}/mark-resolved`,
+      {
+        method: 'POST',
+        body: JSON.stringify({
+          link_url: linkUrl,
+          error_type: errorType,
+          config_id: configId,
+        }),
+      }
+    );
+  }
+
+  async removeDomainRule(
+    filename: string,
+    linkUrl: string,
+    errorType: string,
+    configId?: string
+  ): Promise<{ message: string; config_id: string; domain: string; status_code: number | null; ignore_timeouts: boolean }> {
+    return this.request<{ message: string; config_id: string; domain: string; status_code: number | null; ignore_timeouts: boolean }>(
+      `/reports/${filename}/remove-rule`,
       {
         method: 'POST',
         body: JSON.stringify({
