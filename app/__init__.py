@@ -31,7 +31,9 @@ def create_app(config=None):
     # Use absolute path for static folder to work correctly in Docker
     base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     static_folder = os.path.join(base_dir, "frontend", "dist")
-    app = Flask(__name__, static_folder=static_folder, static_url_path="")
+    # Disable automatic static file serving
+    # We'll handle it manually in catch-all route
+    app = Flask(__name__, static_folder=None, static_url_path=None)
 
     # Apply config
     if config:
@@ -63,7 +65,10 @@ def create_app(config=None):
 
     app.register_blueprint(api_bp)
 
-    # Serve frontend for production
+    # Store static folder path for manual serving
+    app.config["FRONTEND_STATIC_FOLDER"] = static_folder
+
+    # Serve frontend for production - catch-all route must be last
     @app.route("/", defaults={"path": ""})
     @app.route("/<path:path>")
     def serve_frontend(path):
@@ -74,13 +79,15 @@ def create_app(config=None):
 
             abort(404)
 
-        # Check if requested path exists as static file
-        if path:
-            static_path = os.path.join(app.static_folder, path)
-            if os.path.exists(static_path) and os.path.isfile(static_path):
-                return send_from_directory(app.static_folder, path)
+        static_folder_path = app.config["FRONTEND_STATIC_FOLDER"]
 
-        # Fallback to index.html for SPA routing
-        return send_from_directory(app.static_folder, "index.html")
+        # Check if requested path exists as static file (CSS, JS, images, etc.)
+        if path:
+            static_path = os.path.join(static_folder_path, path)
+            if os.path.exists(static_path) and os.path.isfile(static_path):
+                return send_from_directory(static_folder_path, path)
+
+        # Fallback to index.html for SPA routing (React Router handles the rest)
+        return send_from_directory(static_folder_path, "index.html")
 
     return app
